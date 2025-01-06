@@ -9,7 +9,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { NewForm } from "../components/NewForm";
 import { ShareDialog } from "../components/ShareDialog";
 import { Button } from "../components/ui/Button";
@@ -66,7 +66,6 @@ export function FormCard({
   form: QueriedDocument;
   onDelete?: () => void;
 }) {
-  const navigate = useNavigate();
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -91,8 +90,8 @@ export function FormCard({
 
   return (
     <>
-      <div
-        onClick={() => navigate(`/forms/${form.$id}/edit`)}
+      <Link
+        to={`/forms/${form.$id}/edit`}
         className="border border-gray-300 rounded-md p-3 hover:border-gray-400 transition-colors cursor-pointer relative group"
       >
         <div className="flex flex-col gap-3 mb-12">
@@ -113,16 +112,17 @@ export function FormCard({
               <ShareIcon className="w-4 h-4" />
               <span>Share</span>
             </Button>
-            <Button
-              className="flex items-center gap-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/forms/${form.$id}`);
-              }}
-            >
-              <EyeIcon className="w-4 h-4" />
-              <span>View Live</span>
-            </Button>
+            <Link to={`/forms/${form.$id}`}>
+              <Button
+                className="flex items-center gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <EyeIcon className="w-4 h-4" />
+                <span>View Live</span>
+              </Button>
+            </Link>
           </div>
           <Button
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white ml-auto"
@@ -143,7 +143,7 @@ export function FormCard({
           <PencilIcon className="w-4 h-4" />
           <span>Click to edit</span>
         </div>
-      </div>
+      </Link>
       <ShareDialog
         isOpen={showShareDialog}
         onClose={() => setShowShareDialog(false)}
