@@ -1,14 +1,26 @@
 import { signal } from "@preact/signals-react";
 import { LucideIcon } from "lucide-react";
 import { ComponentType, ForwardRefExoticComponent, RefAttributes } from "react";
-import { Counter } from "./fields/Counter";
 import { Checkbox } from "./fields/Checkbox";
+import { Counter } from "./fields/Counter";
 import { NumberField } from "./fields/NumberField";
 import { TextField } from "./fields/TextField";
+import { Select } from "./fields/Select";
 
-export type ElementType = "TextField" | "NumberField" | "Checkbox" | "Counter";
+export type ElementType =
+  | "TextField"
+  | "NumberField"
+  | "Checkbox"
+  | "Counter"
+  | "Select";
 
-export type PropertyType = "string" | "number" | "boolean" | "select" | "any";
+export type PropertyType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "select"
+  | "array"
+  | "any";
 
 export type ReturnTypeToTSType = {
   string: string;
@@ -51,7 +63,7 @@ export type FormValidationResponse = { error: boolean; message?: string };
 
 export type FormElement<T, RT extends ReturnType> = {
   type: ElementType;
-  properties: FormElementProperties<T>;
+  properties: FormElementProperties<Required<T>>;
   generateInstance: (id: string) => FormElementInstance<T>;
   validate: (
     instance: FormElementInstance<T>,
@@ -90,6 +102,7 @@ export const formElements: {
   NumberField,
   Checkbox,
   Counter,
+  Select,
 };
 
 // signals
