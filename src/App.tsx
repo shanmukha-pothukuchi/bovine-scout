@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import {
   redirectUserToDashboard,
-  retrieveForm,
+  retrieveFormWithUserIfPossible,
   retrieveUser,
   retrieveUserAndForm,
 } from "./lib/router";
@@ -14,7 +14,11 @@ import { Form } from "./pages/Form";
 const router = createBrowserRouter([
   { path: "/", element: <Dashboard />, loader: retrieveUser },
   { path: "/login", element: <Login />, loader: redirectUserToDashboard },
-  { path: "/forms/:id", element: <Form />, loader: retrieveForm },
+  {
+    path: "/forms/:id",
+    element: <Form />,
+    loader: retrieveFormWithUserIfPossible,
+  },
   {
     path: "/forms/:id/edit",
     element: <Builder />,

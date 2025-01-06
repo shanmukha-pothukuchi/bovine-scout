@@ -66,16 +66,25 @@ export async function retrieveUserAndForm({
   }
 }
 
-export async function retrieveForm({
+export async function retrieveFormWithUserIfPossible({
   params,
-}: LoaderFunctionArgs): Promise<{ form: FormDocument } | void> {
+}: LoaderFunctionArgs): Promise<{
+  form: FormDocument;
+  user?: UserWithCustomPreferences;
+} | void> {
   try {
+    let user;
+    try {
+      user = await account.get<CustomPreferences>();
+    } catch {
+      console.log("error");
+    }
     const form = await databases.getDocument<FormDocument>(
       import.meta.env.APPWRITE_DB_ID,
       import.meta.env.APPWRITE_FORMS_COLLECTION_ID,
       params.id!
     );
-    return { form };
+    return { form, user };
   } catch (error) {
     console.error("Failed to retrieve forms:", error);
   }

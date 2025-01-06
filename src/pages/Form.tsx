@@ -1,5 +1,5 @@
 import { createRef, useRef } from "react";
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import {
   FormElementImperativeHandle,
   FormElementInstanceRow,
@@ -8,13 +8,15 @@ import {
   ReturnTypeToTSType,
 } from "../components/FormElements";
 import { Button } from "../components/ui/Button";
-import { FormDocument } from "../lib/router";
+import { FormDocument, UserWithCustomPreferences } from "../lib/router";
+import { FileEditIcon } from "lucide-react";
 
 export function Form() {
-  const {
-    form: { content: formContent },
-  } = useLoaderData<{ form: FormDocument }>();
-  const formData: FormElementInstanceRow[] = JSON.parse(formContent);
+  const { form, user } = useLoaderData<{
+    form: FormDocument;
+    user: UserWithCustomPreferences;
+  }>();
+  const formData: FormElementInstanceRow[] = JSON.parse(form.content);
 
   const formElementRefs = useRef<
     React.RefObject<FormElementImperativeHandle>[]
@@ -68,6 +70,14 @@ export function Form() {
       <Button className="text-center" onClick={submitHandler}>
         Submit
       </Button>
+      {form.createdBy === user?.$id && (
+        <Link to={`/forms/${form.$id}/edit`}>
+          <Button className="flex items-center gap-2 fixed bottom-0 right-0 m-4">
+            <FileEditIcon className="size-4" />
+            <span>Edit Form</span>
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }
