@@ -71,8 +71,11 @@ export function Form() {
         Submit
       </Button>
       {form.createdBy === user?.$id && (
-        <Link to={`/forms/${form.$id}/edit`}>
-          <Button className="flex items-center gap-2 fixed bottom-0 right-0 m-4">
+        <Link
+          to={`/forms/${form.$id}/edit`}
+          className="fixed bottom-0 right-0 m-4"
+        >
+          <Button className="flex items-center gap-2">
             <FileEditIcon className="size-4" />
             <span>Edit Form</span>
           </Button>
