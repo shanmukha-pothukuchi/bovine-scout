@@ -1,30 +1,75 @@
 import { signal } from "@preact/signals-react";
-import { ComponentType } from "react";
-import { IconType } from "react-icons";
+import { LucideIcon } from "lucide-react";
+import { ComponentType, ForwardRefExoticComponent, RefAttributes } from "react";
+import { Counter } from "./fields/Counter";
+import { Checkbox } from "./fields/Checkbox";
 import { NumberField } from "./fields/NumberField";
 import { TextField } from "./fields/TextField";
 
-export type ElementType = "TextField" | "NumberField";
+export type ElementType = "TextField" | "NumberField" | "Checkbox" | "Counter";
 
-export type PropertyType = "string" | "number" | "boolean" | "any";
+export type PropertyType = "string" | "number" | "boolean" | "select" | "any";
 
-export type FormElement<T> = {
+export type ReturnTypeToTSType = {
+  string: string;
+  number: number;
+  boolean: boolean;
+  "string[]": string[];
+  "number[]": number[];
+  "boolean[]": boolean[];
+  "any[]": unknown[];
+};
+
+export type ReturnType = keyof ReturnTypeToTSType;
+
+export type SelectOptions<T extends string> = {
+  value: T;
+  label: string;
+}[];
+
+export type FormElementProperties<T> = {
+  [K in keyof T]: {
+    name: string;
+    description: string;
+  } & (
+    | (T[K] extends string
+        ? { type: "select"; options: SelectOptions<T[K]> }
+        : never)
+    | { type: Exclude<PropertyType, "select"> }
+  );
+};
+
+export type UpdateFormValue<T extends ReturnType> = (
+  value: ReturnTypeToTSType[T]
+) => void;
+
+export type FormElementImperativeHandle = {
+  validate: () => boolean;
+};
+
+export type FormValidationResponse = { error: boolean; message?: string };
+
+export type FormElement<T, RT extends ReturnType> = {
   type: ElementType;
-  properties: Record<
-    keyof T,
-    { name: string; type: PropertyType; description: string }
-  >;
+  properties: FormElementProperties<T>;
   generateInstance: (id: string) => FormElementInstance<T>;
+  validate: (
+    instance: FormElementInstance<T>,
+    value: ReturnTypeToTSType[RT]
+  ) => FormValidationResponse;
   paletteComponent: {
     name: string;
-    icon: IconType;
+    icon: LucideIcon;
   };
   builderComponent: ComponentType<{
     instance: FormElementInstance<T>;
   }>;
-  renderedComponent: ComponentType<{
-    instance: FormElementInstance<T>;
-  }>;
+  renderedComponent: ForwardRefExoticComponent<
+    {
+      instance: FormElementInstance<T>;
+      updateFormValue?: UpdateFormValue<RT>;
+    } & RefAttributes<FormElementImperativeHandle>
+  >;
 };
 
 export type FormElementInstance<T> = {
@@ -35,16 +80,20 @@ export type FormElementInstance<T> = {
 
 export type Row<T> = T[];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const formElements: { [key in ElementType]: FormElement<any> } = {
+export type FormElementInstanceRow<T = unknown> = Row<FormElementInstance<T>>;
+
+export const formElements: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key in ElementType]: FormElement<any, any>;
+} = {
   TextField,
   NumberField,
+  Checkbox,
+  Counter,
 };
 
 // signals
-export const formElementInstances = signal<Row<FormElementInstance<unknown>>[]>(
-  []
-);
+export const formElementInstanceRows = signal<FormElementInstanceRow[]>([]);
 export const selectedFormElementInstance =
   signal<FormElementInstance<unknown>>();
 export const showFormPreview = signal<boolean>(false);
@@ -56,25 +105,25 @@ export const addFormElementInstance = (
 ) => {
   if (colIndex !== undefined) {
     (
-      formElementInstances.value[rowIndex] as FormElementInstance<unknown>[]
+      formElementInstanceRows.value[rowIndex] as FormElementInstance<unknown>[]
     ).splice(colIndex, 0, instance);
   } else {
-    formElementInstances.value.splice(rowIndex, 0, [instance]);
+    formElementInstanceRows.value.splice(rowIndex, 0, [instance]);
   }
-  formElementInstances.value = [...formElementInstances.value];
+  formElementInstanceRows.value = [...formElementInstanceRows.value];
 };
 
 export const updateFormElementInstance = (
   newInstance: FormElementInstance<unknown>
 ) => {
   const [rowIndex, columnIndex] = getFormElementInstanceIndex(newInstance.id);
-  formElementInstances.value[rowIndex][columnIndex] = newInstance;
-  formElementInstances.value = [...formElementInstances.value];
+  formElementInstanceRows.value[rowIndex][columnIndex] = newInstance;
+  formElementInstanceRows.value = [...formElementInstanceRows.value];
 };
 
 export const removeFormElementInstance = (id: string) => {
   if (
-    formElementInstances.value
+    formElementInstanceRows.value
       .flat()
       .findIndex((instance) => instance.id === id) === -1
   ) {
@@ -84,22 +133,22 @@ export const removeFormElementInstance = (id: string) => {
     setSelectedFormElementInstance();
   const [rowIndex, columnIndex] = getFormElementInstanceIndex(id);
   if (rowIndex !== -1 && columnIndex !== -1) {
-    (formElementInstances.value[rowIndex] as []).splice(columnIndex, 1);
+    (formElementInstanceRows.value[rowIndex] as []).splice(columnIndex, 1);
   }
   if (
     (rowIndex !== -1 && columnIndex === -1) ||
-    (Array.isArray(formElementInstances.value[rowIndex]) &&
-      formElementInstances.value[rowIndex].length <= 0)
+    (Array.isArray(formElementInstanceRows.value[rowIndex]) &&
+      formElementInstanceRows.value[rowIndex].length <= 0)
   ) {
-    formElementInstances.value.splice(rowIndex, 1);
+    formElementInstanceRows.value.splice(rowIndex, 1);
   }
-  formElementInstances.value = [...formElementInstances.value];
+  formElementInstanceRows.value = [...formElementInstanceRows.value];
 };
 
 export const getFormElementInstanceIndex = (id: string): [number, number] => {
   let rowIndex = -1;
   let columnIndex = -1;
-  formElementInstances.value.forEach((row, i) => {
+  formElementInstanceRows.value.forEach((row, i) => {
     if (Array.isArray(row)) {
       const index = row.findIndex((instance) => instance.id === id);
       if (index !== -1) {
@@ -114,7 +163,7 @@ export const getFormElementInstanceIndex = (id: string): [number, number] => {
 };
 
 export const getFormElementInstance = (id: string) => {
-  return formElementInstances.value
+  return formElementInstanceRows.value
     .flat()
     .find((instance) => instance.id === id);
 };

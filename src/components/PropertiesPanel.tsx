@@ -1,3 +1,4 @@
+import { HTMLAttributes } from "react";
 import {
   formElements,
   getFormElementInstance,
@@ -12,10 +13,10 @@ import {
 export function PropertiesPanel({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`flex flex-col h-full text-wrap p-3 border-2 border-gray-400 rounded-md ${className}`}
+      className={`flex flex-col h-full text-wrap p-3 border border-gray-400 rounded-md ${className}`}
       {...props}
     >
       {!selectedFormElementInstance.value && (
@@ -27,13 +28,18 @@ export function PropertiesPanel({
         {selectedFormElementInstance.value &&
           Object.entries(
             formElements[selectedFormElementInstance.value.type].properties
-          ).map(([id, { name, type, description }]) => (
+          ).map(([id, { name, type, description, ...props }]) => (
             <PropertyField
               key={id}
               id={id}
               name={name}
               type={type}
               description={description}
+              options={
+                type === "select" && "options" in props
+                  ? props.options
+                  : undefined
+              }
             />
           ))}
       </div>
@@ -46,11 +52,13 @@ function PropertyField({
   name,
   type,
   description,
+  options,
 }: {
   id: string;
   name: string;
   type: PropertyType;
   description: string;
+  options?: { value: string; label: string }[];
 }) {
   const formElementInstance = {
     ...getFormElementInstance(selectedFormElementInstance.value?.id as string),
@@ -90,6 +98,29 @@ function PropertyField({
             }
           }}
         />
+      );
+      break;
+    case "select":
+      input = (
+        <select
+          className="w-full p-2 border border-gray-300 rounded-sm text-sm"
+          id={id}
+          defaultValue={props[id] as string}
+          onChange={(event) => {
+            if (formElementInstance) {
+              (formElementInstance.properties as Record<string, unknown>)[id] =
+                event.target.value;
+              updateFormElementInstance(formElementInstance);
+            }
+          }}
+        >
+          {options &&
+            options.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+        </select>
       );
       break;
     case "string":

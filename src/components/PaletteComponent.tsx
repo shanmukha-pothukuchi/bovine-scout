@@ -1,6 +1,6 @@
 import { DragOverlay, useDraggable } from "@dnd-kit/core";
+import { LucideIcon } from "lucide-react";
 import { forwardRef } from "react";
-import { IconType } from "react-icons";
 import { ElementType } from "./FormElements";
 
 export function PaletteComponent({
@@ -10,7 +10,7 @@ export function PaletteComponent({
 }: {
   type: ElementType;
   name: string;
-  icon: IconType;
+  icon: LucideIcon;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: type,
@@ -43,17 +43,17 @@ export const PaletteComponentDragOverlay = forwardRef<
   HTMLDivElement,
   {
     name: string;
-    icon: IconType;
+    icon: LucideIcon;
   } & React.HTMLAttributes<HTMLDivElement>
 >(({ name, icon: Icon, className, ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={`bg-white flex items-center justify-center gap-2 ring-1 ring-gray-800 p-4 cursor-grab rounded-sm ${className} h-fit`}
+      className={`bg-white flex items-center justify-center gap-2 ring-1 ring-gray-400 p-3 cursor-grab rounded-sm ${className} h-fit`}
       {...props}
     >
       <div className="w-4 h-4">
-        <Icon size="100%" />
+        <Icon className="w-full h-full" />
       </div>
       <span className="text-xs text-center">{name}</span>
     </div>

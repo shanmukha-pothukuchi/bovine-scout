@@ -1,10 +1,11 @@
 import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
+import { HTMLAttributes } from "react";
 import { BuilderComponentWrapper } from "../components/BuilderComponentWrapper";
 import {
   addFormElementInstance,
   ElementType,
-  formElementInstances,
+  formElementInstanceRows,
   formElements,
   getFormElementInstance,
   getFormElementInstanceIndex,
@@ -15,7 +16,7 @@ import {
 export function BuilderForm({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement>) {
   const formId = "form";
   const form = useDroppable({
     id: formId,
@@ -30,7 +31,7 @@ export function BuilderForm({
         const instance = formElements[
           event.active.id as ElementType
         ].generateInstance(nanoid());
-        addFormElementInstance(instance, formElementInstances.value.length);
+        addFormElementInstance(instance, formElementInstanceRows.value.length);
       } else if (event.over?.data.current?.isBuilderDroppableZone) {
         let instance;
         if (event.active.data.current?.isPaletteComponent) {
@@ -70,7 +71,7 @@ export function BuilderForm({
         const instance = getFormElementInstance(event.active.id as string);
         if (!instance) return;
         removeFormElementInstance(instance.id as string);
-        addFormElementInstance(instance, formElementInstances.value.length);
+        addFormElementInstance(instance, formElementInstanceRows.value.length);
       }
     },
   });
@@ -78,23 +79,23 @@ export function BuilderForm({
   return (
     <div
       ref={form.setNodeRef}
-      className={`gap-3 flex flex-col p-3 rounded-md border-2 ${
+      className={`gap-3 flex flex-col p-3 rounded-md border ${
         form.isOver ? "border-gray-800" : "border-gray-400"
       } ${className}`}
       onClick={() => setSelectedFormElementInstance()}
       {...props}
     >
-      {formElementInstances.value.length === 0 && !form.isOver && (
+      {formElementInstanceRows.value.length === 0 && !form.isOver && (
         <p className="flex flex-grow items-center justify-center text-gray-500">
           Drop here
         </p>
       )}
-      {form.isOver && formElementInstances.value.length === 0 && (
+      {form.isOver && formElementInstanceRows.value.length === 0 && (
         <div className="w-full">
           <div className="h-20 rounded-md bg-gray-200"></div>
         </div>
       )}
-      {formElementInstances.value.map((instance, i) => {
+      {formElementInstanceRows.value.map((instance, i) => {
         return (
           <div key={i} className="flex flex-row gap-3">
             {instance.map((subInstance) => (

@@ -1,8 +1,8 @@
 import { useDndContext, useDndMonitor, useDroppable } from "@dnd-kit/core";
+import { Trash2Icon } from "lucide-react";
+import { HTMLAttributes } from "react";
 import { formElements, removeFormElementInstance } from "./FormElements";
 import { PaletteComponent } from "./PaletteComponent";
-import { HTMLAttributes } from "react";
-import { FaTrash } from "react-icons/fa";
 
 export function ElementsPanel({
   className,
@@ -29,19 +29,26 @@ export function ElementsPanel({
   return (
     <div
       ref={elementsPanel.setNodeRef}
-      className={`p-3 h-full border-2 border-gray-400 rounded-md ${
+      className={`p-3 h-full border border-gray-400 rounded-md ${
         elementsPanel.isOver ? "border-gray-800" : "border-gray-400"
       } ${
-        active?.data.current?.isBuilderComponent && "bg-red-200 border-red-400"
+        active?.data.current?.isBuilderComponent &&
+        `bg-red-200 ${
+          elementsPanel.isOver ? "border-red-400" : "border-red-300"
+        }`
       } ${className}`}
       {...props}
     >
       {active?.data.current?.isBuilderComponent ? (
-        <p className="flex flex-grow h-full items-center justify-center text-red-400 text-center text-7xl">
-          <FaTrash />
+        <p
+          className={`flex flex-grow h-full items-center justify-center ${
+            elementsPanel.isOver ? "text-red-400" : "text-red-300"
+          } text-center`}
+        >
+          <Trash2Icon className="size-14" />
         </p>
       ) : (
-        <div className="grid gap-2.5">
+        <div className="grid gap-3">
           {Object.values(formElements).map(
             ({ type, paletteComponent: { name, icon } }) => {
               return (

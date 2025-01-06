@@ -93,14 +93,16 @@ export function BuilderComponentWrapper({
           ></div>
           {hovering && (
             <div className="absolute h-full w-full bg-black/5 cursor-pointer rounded-sm">
-              <div className="w-full absolute top-1/2 -translate-y-1/2 select-none">
+              <div className="w-full absolute top-1/2 -translate-y-1/2 select-none pointer">
                 <p className="text-sm text-gray-800 text-center p-2">
                   Click for properties or drag to reorder
                 </p>
               </div>
             </div>
           )}
-          <BuilderComponent key={instance.id} instance={instance} />
+          <div className="pointer-events-none w-full h-full">
+            <BuilderComponent key={instance.id} instance={instance} />
+          </div>
         </>
       )}
       {top.isOver && (

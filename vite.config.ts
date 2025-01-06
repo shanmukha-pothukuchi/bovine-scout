@@ -10,4 +10,5 @@ export default defineConfig({
       },
     }),
   ],
+  envPrefix: "APPWRITE_",
 });
