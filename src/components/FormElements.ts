@@ -109,7 +109,6 @@ export const formElements: {
 export const formElementInstanceRows = signal<FormElementInstanceRow[]>([]);
 export const selectedFormElementInstance =
   signal<FormElementInstance<unknown>>();
-export const showFormPreview = signal<boolean>(false);
 
 export const addFormElementInstance = (
   instance: FormElementInstance<unknown>,
@@ -188,7 +187,3 @@ export const setSelectedFormElementInstance = (id?: string) => {
   }
   selectedFormElementInstance.value = getFormElementInstance(id);
 };
-
-export function setShowFormPreview(value: boolean) {
-  showFormPreview.value = value;
-}

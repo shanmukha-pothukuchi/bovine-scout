@@ -19,11 +19,7 @@ import toast from "react-hot-toast";
 import { Link, useLoaderData, useRevalidator } from "react-router";
 import { BuilderForm } from "../components/BuilderForm";
 import { ElementsPanel } from "../components/ElementsPanel";
-import {
-  formElementInstanceRows,
-  setShowFormPreview,
-  showFormPreview,
-} from "../components/FormElements";
+import { formElementInstanceRows } from "../components/FormElements";
 import { NewForm } from "../components/NewForm";
 import { PreviewForm } from "../components/PreviewForm";
 import { PropertiesPanel } from "../components/PropertiesPanel";
@@ -33,6 +29,8 @@ import { databases } from "../lib/appwrite";
 import { FormDocument, UserWithCustomPreferences } from "../lib/router";
 
 export function Builder() {
+  const [showFormPreview, setShowFormPreview] = useState(false);
+
   const { form } = useLoaderData<{
     user: UserWithCustomPreferences;
     form: FormDocument;
@@ -58,7 +56,7 @@ export function Builder() {
       <div className="w-fit h-screen flex flex-col p-3 gap-3 mx-auto">
         <div className="rounded-md border border-gray-400 p-3 flex flex-row justify-between items-center">
           <div className="flex items-center gap-2">
-            {!showFormPreview.value && (
+            {!showFormPreview && (
               <Link to="/">
                 <Button variant="outline" className="flex items-center gap-2">
                   <ChevronLeft className="size-4" />
@@ -71,13 +69,13 @@ export function Builder() {
               onClick={() => setShowEditFormDialog(true)}
             >
               <span className="truncate max-w-[250px]">
-                {!showFormPreview.value ? form.name : "Preview"}
+                {!showFormPreview ? form.name : "Preview"}
               </span>
-              <Edit2Icon className="size-4" />
+              {!showFormPreview && <Edit2Icon className="size-4" />}
             </p>
           </div>
           <div>
-            {showFormPreview.value ? (
+            {showFormPreview ? (
               <Button
                 className="flex items-center gap-2"
                 onClick={() => setShowFormPreview(false)}
@@ -104,7 +102,7 @@ export function Builder() {
           </div>
         </div>
         <div className="flex-grow flex flex-col overflow-hidden gap-3">
-          {showFormPreview.value ? (
+          {showFormPreview ? (
             <PreviewForm className="min-w-[600px] max-w-[600px] overflow-y-auto" />
           ) : (
             <div className="flex flex-row gap-3 h-full">
