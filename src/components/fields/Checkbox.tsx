@@ -141,11 +141,8 @@ const CheckboxComponent = forwardRef<
     }, [defaultValue]);
 
     return (
-      <div className="bg-white w-full p-2 ring-1 ring-gray-400 rounded-sm space-y-1 min-h-full">
-        <div className="text-xs">
-          {label} {required && <span className="text-red-500">*</span>}
-        </div>
-        <div className="flex items-center space-x-2 p-2 border border-gray-300 rounded-sm">
+      <div className="bg-white w-full p-2 ring-1 ring-gray-400 min-h-full rounded-sm space-y-1">
+        <div className="flex items-center space-x-2">
           <input
             type="checkbox"
             id={inputId}
@@ -158,12 +155,11 @@ const CheckboxComponent = forwardRef<
             }`}
             onBlur={validate}
           />
-          {description && (
-            <label htmlFor={inputId} className="text-sm text-gray-600">
-              {description}
-            </label>
-          )}
+          <label htmlFor={inputId} className="text-sm text-gray-600 flex-1">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
         </div>
+        {description && <div className="text-xs">{description}</div>}
         {validation.error && (
           <p className="text-red-500 text-sm">{validation.message}</p>
         )}

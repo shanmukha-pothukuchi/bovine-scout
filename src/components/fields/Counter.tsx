@@ -214,65 +214,39 @@ const CounterComponent = forwardRef<
           {label} {required && <span className="text-red-500">*</span>}
         </label>
         <div
-          className={`flex ${
-            layout === "vertical"
-              ? "flex-col space-y-2"
-              : "flex-row space-x-2 justify-center"
-          } items-center`}
+          className={`flex ${layout === "vertical" && "flex-col"} gap-2 w-full`}
         >
-          {layout === "vertical" && (
-            <div className="flex w-full space-x-2">
-              <button
-                onClick={handleDecrement}
-                disabled={dummy || (min !== undefined && count <= min)}
-                className="px-3 py-2 border border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
-              >
-                {getNumWithSign(-decrementBy)}
-              </button>
-              <button
-                onClick={handleIncrement}
-                disabled={dummy || (max !== undefined && count >= max)}
-                className="px-3 py-2 border border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
-              >
-                {getNumWithSign(incrementBy)}
-              </button>
-            </div>
-          )}
-          <div
-            className={`flex items-center ${
-              layout === "vertical" ? "w-full" : "space-x-2"
+          <button
+            onClick={handleDecrement}
+            disabled={dummy || (max !== undefined && count >= max)}
+            className={`border p-2 border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1 ${
+              layout === "horizontal" && "w-1/3"
             }`}
           >
-            {layout === "horizontal" && (
-              <button
-                onClick={handleDecrement}
-                disabled={dummy || (min !== undefined && count <= min)}
-                className="px-3 py-2 border border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {getNumWithSign(-decrementBy)}
-              </button>
-            )}
-            <input
-              type="number"
-              id={inputId}
-              value={count}
-              readOnly
-              className={`w-full p-2 border rounded-sm text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                validation.error ? "border-red-400" : "border-gray-300"
-              }`}
-              style={{ textAlign: "center" }}
-              onBlur={validate}
-            />
-            {layout === "horizontal" && (
-              <button
-                onClick={handleIncrement}
-                disabled={dummy || (max !== undefined && count >= max)}
-                className="px-3 py-2 border border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {getNumWithSign(incrementBy)}
-              </button>
-            )}
-          </div>
+            {getNumWithSign(-decrementBy)}
+          </button>
+          <input
+            type="number"
+            id={inputId}
+            value={count}
+            readOnly
+            className={`${
+              layout === "horizontal" && "w-1/3"
+            } border p-2 rounded-sm text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+              validation.error ? "border-red-400" : "border-gray-300"
+            }`}
+            style={{ textAlign: "center" }}
+            onBlur={validate}
+          />
+          <button
+            onClick={handleIncrement}
+            disabled={dummy || (max !== undefined && count >= max)}
+            className={`border p-2 border-gray-300 rounded-sm text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1 ${
+              layout === "horizontal" && "w-1/3"
+            }`}
+          >
+            {getNumWithSign(incrementBy)}
+          </button>
         </div>
         {validation.error && (
           <p className="text-red-500 text-sm">{validation.message}</p>
