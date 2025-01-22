@@ -29,7 +29,7 @@ const defaultProperties: CheckboxProps = {
   required: false,
 };
 
-export const Checkbox: FormElement<CheckboxProps, "boolean"> = {
+export const Checkbox: FormElement<CheckboxProps, boolean> = {
   type: "Checkbox",
   properties: {
     label: {
@@ -102,7 +102,7 @@ const CheckboxComponent = forwardRef<
   {
     properties: CheckboxProps;
     formValidate?: (value: unknown) => FormValidationResponse;
-    updateFormValue?: UpdateFormValue<"boolean">;
+    updateFormValue?: UpdateFormValue<boolean>;
     dummy?: boolean;
   }
 >(

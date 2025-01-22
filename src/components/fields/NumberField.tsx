@@ -35,7 +35,7 @@ const defaultProperties: NumberFieldProps = {
   step: undefined,
 };
 
-export const NumberField: FormElement<NumberFieldProps, "number"> = {
+export const NumberField: FormElement<NumberFieldProps, number> = {
   type: "NumberField",
   properties: {
     label: {
@@ -134,7 +134,7 @@ const NumberFieldComponent = forwardRef<
   {
     properties: NumberFieldProps;
     formValidate?: (value: unknown) => FormValidationResponse;
-    updateFormValue?: UpdateFormValue<"number">;
+    updateFormValue?: UpdateFormValue<number>;
     dummy?: boolean;
   }
 >(

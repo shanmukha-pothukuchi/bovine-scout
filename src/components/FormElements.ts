@@ -6,13 +6,15 @@ import { Counter } from "./fields/Counter";
 import { NumberField } from "./fields/NumberField";
 import { TextField } from "./fields/TextField";
 import { Select } from "./fields/Select";
+import { Stopwatch } from "./fields/Stopwatch";
 
 export type ElementType =
   | "TextField"
   | "NumberField"
   | "Checkbox"
   | "Counter"
-  | "Select";
+  | "Select"
+  | "Stopwatch";
 
 export type PropertyType =
   | "string"
@@ -21,18 +23,6 @@ export type PropertyType =
   | "select"
   | "array"
   | "any";
-
-export type ReturnTypeToTSType = {
-  string: string;
-  number: number;
-  boolean: boolean;
-  "string[]": string[];
-  "number[]": number[];
-  "boolean[]": boolean[];
-  "any[]": unknown[];
-};
-
-export type ReturnType = keyof ReturnTypeToTSType;
 
 export type SelectOptions<T extends string> = {
   value: T;
@@ -51,9 +41,7 @@ export type FormElementProperties<T> = {
   );
 };
 
-export type UpdateFormValue<T extends ReturnType> = (
-  value: ReturnTypeToTSType[T]
-) => void;
+export type UpdateFormValue<T> = (value: T) => void;
 
 export type FormElementImperativeHandle = {
   validate: () => boolean;
@@ -61,13 +49,13 @@ export type FormElementImperativeHandle = {
 
 export type FormValidationResponse = { error: boolean; message?: string };
 
-export type FormElement<T, RT extends ReturnType> = {
+export type FormElement<T, RT> = {
   type: ElementType;
   properties: FormElementProperties<Required<T>>;
   generateInstance: (id: string) => FormElementInstance<T>;
   validate: (
     instance: FormElementInstance<T>,
-    value: ReturnTypeToTSType[RT]
+    value: RT
   ) => FormValidationResponse;
   paletteComponent: {
     name: string;
@@ -103,6 +91,7 @@ export const formElements: {
   Checkbox,
   Counter,
   Select,
+  Stopwatch,
 };
 
 // signals

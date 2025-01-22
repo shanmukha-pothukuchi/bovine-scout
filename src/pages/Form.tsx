@@ -1,15 +1,13 @@
+import { FileEditIcon } from "lucide-react";
 import { createRef, useRef } from "react";
 import { Link, useLoaderData } from "react-router";
 import {
   FormElementImperativeHandle,
   FormElementInstanceRow,
   formElements,
-  ReturnType,
-  ReturnTypeToTSType,
 } from "../components/FormElements";
 import { Button } from "../components/ui/Button";
 import { FormDocument, UserWithCustomPreferences } from "../lib/router";
-import { FileEditIcon } from "lucide-react";
 
 export function Form() {
   const { form, user } = useLoaderData<{
@@ -31,12 +29,10 @@ export function Form() {
     }
   };
 
-  const formValues = useRef<{ [key: string]: ReturnTypeToTSType[ReturnType] }>(
-    {}
-  );
+  const formValues = useRef<{ [key: string]: unknown }>({});
 
   const updateFormValue = (id: string) => {
-    return (value: ReturnTypeToTSType[ReturnType]) => {
+    return (value: unknown) => {
       formValues.current[id] = value;
     };
   };

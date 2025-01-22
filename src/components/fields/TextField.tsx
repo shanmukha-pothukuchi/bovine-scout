@@ -35,7 +35,7 @@ const defaultProperties: TextFieldProps = {
   pattern: undefined,
 };
 
-export const TextField: FormElement<TextFieldProps, "string"> = {
+export const TextField: FormElement<TextFieldProps, string> = {
   type: "TextField",
   properties: {
     label: {
@@ -149,7 +149,7 @@ const TextFieldComponent = forwardRef<
   {
     properties: TextFieldProps;
     formValidate?: (value: unknown) => FormValidationResponse;
-    updateFormValue?: UpdateFormValue<"string">;
+    updateFormValue?: UpdateFormValue<string>;
     dummy?: boolean;
   }
 >(

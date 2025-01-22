@@ -37,7 +37,7 @@ const defaultProperties: CounterProps = {
   max: undefined,
 };
 
-export const Counter: FormElement<CounterProps, "number"> = {
+export const Counter: FormElement<CounterProps, number> = {
   type: "Counter",
   properties: {
     label: {
@@ -147,7 +147,7 @@ const CounterComponent = forwardRef<
   {
     properties: CounterProps;
     formValidate?: (value: unknown) => FormValidationResponse;
-    updateFormValue?: UpdateFormValue<"number">;
+    updateFormValue?: UpdateFormValue<number>;
     dummy?: boolean;
   }
 >(

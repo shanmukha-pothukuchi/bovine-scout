@@ -31,7 +31,7 @@ const defaultProperties: SelectProps = {
   placeholder: "Select an option",
 };
 
-export const Select: FormElement<SelectProps, "string"> = {
+export const Select: FormElement<SelectProps, string> = {
   type: "Select",
   properties: {
     label: {
@@ -110,7 +110,7 @@ const SelectComponent = forwardRef<
   {
     properties: SelectProps;
     formValidate?: (value: unknown) => FormValidationResponse;
-    updateFormValue?: UpdateFormValue<"string">;
+    updateFormValue?: UpdateFormValue<string>;
     dummy?: boolean;
   }
 >(
