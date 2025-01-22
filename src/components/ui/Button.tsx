@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "./utils";
 
 export function Button({
   children,
@@ -12,12 +13,13 @@ export function Button({
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`${
-        variant === "solid" && "bg-black text-white hover:bg-gray-800"
-      } ${
+      className={cn(
+        variant === "solid" && "bg-black text-white hover:bg-gray-800",
         variant === "outline" &&
-        "ring-1 ring-gray-400 text-black bg-white hover:bg-gray-300"
-      } text-sm px-3 py-2 rounded-md transition duration-300 ${className}`}
+          "ring-1 ring-gray-400 text-black bg-white hover:bg-gray-300",
+        "text-sm px-3 py-2 rounded-md transition duration-300",
+        className
+      )}
       {...props}
     >
       {children}
