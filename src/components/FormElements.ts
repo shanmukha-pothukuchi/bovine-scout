@@ -7,6 +7,7 @@ import { NumberField } from "./fields/NumberField";
 import { TextField } from "./fields/TextField";
 import { Select } from "./fields/Select";
 import { Stopwatch } from "./fields/Stopwatch";
+import { Rating } from "./fields/Rating";
 
 export type ElementType =
   | "TextField"
@@ -14,7 +15,8 @@ export type ElementType =
   | "Checkbox"
   | "Counter"
   | "Select"
-  | "Stopwatch";
+  | "Stopwatch"
+  | "Rating";
 
 export type PropertyType =
   | "string"
@@ -92,6 +94,7 @@ export const formElements: {
   Counter,
   Select,
   Stopwatch,
+  Rating,
 };
 
 // signals

@@ -9,7 +9,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useNavigate } from "react-router";
 import { NewForm } from "../components/NewForm";
 import { ShareDialog } from "../components/ShareDialog";
 import { Button } from "../components/ui/Button";
@@ -88,10 +88,14 @@ export function FormCard({
     }
   };
 
+  const navigate = useNavigate();
+
   return (
     <>
-      <Link
-        to={`/forms/${form.$id}/edit`}
+      <div
+        onClick={() => {
+          navigate(`/forms/${form.$id}/edit`);
+        }}
         className="border border-gray-300 rounded-md p-3 hover:border-gray-400 transition-colors cursor-pointer relative group"
       >
         <div className="flex flex-col gap-3 mb-12">
@@ -143,7 +147,7 @@ export function FormCard({
           <PencilIcon className="w-4 h-4" />
           <span>Click to edit</span>
         </div>
-      </Link>
+      </div>
       <ShareDialog
         isOpen={showShareDialog}
         onClose={() => setShowShareDialog(false)}

@@ -27,6 +27,12 @@ export function Form() {
       const res = elementRef.current?.validate();
       isValid = isValid && (res ?? true);
     }
+
+    console.log(formValues.current);
+
+    if (isValid) {
+      console.log("Submitting form");
+    }
   };
 
   const formValues = useRef<{ [key: string]: unknown }>({});

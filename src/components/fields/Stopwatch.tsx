@@ -217,7 +217,7 @@ const StopwatchComponent = forwardRef<
     }
 
     return (
-      <div className="bg-white w-full p-2 ring-1 ring-gray-400 rounded-sm">
+      <div className="bg-white w-full p-2 ring-1 ring-gray-400 rounded-sm min-h-full">
         <label htmlFor={inputId} className="text-xs">
           {label}
         </label>
