@@ -1,0 +1,17 @@
+svg {
+    display: block;
+    color: white;
+}
+
+path,
+circle {
+    cursor: pointer;
+    stroke: #4c4a48;
+    color: #292726;
+}
+
+text,
+g {
+    cursor: pointer;
+    user-select: none;
+}
