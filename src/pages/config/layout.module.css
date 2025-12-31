@@ -1,0 +1,22 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+}
+
+.header {
+    height: 100px;
+    background: #202020;
+    border-bottom: 2px solid #2a2a2a;
+}
+
+.body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.footer {
+    height: 100px;
+    border-top: 2px solid #2a2a2a;
+    background: #202020;
+}

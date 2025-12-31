@@ -1,17 +1,17 @@
-svg {
+.container svg {
     display: block;
     color: white;
 }
 
-path,
-circle {
+.container path,
+.container circle {
     cursor: pointer;
     stroke: #4c4a48;
     color: #292726;
 }
 
-text,
-g {
+.container text,
+.container g {
     cursor: pointer;
     user-select: none;
 }

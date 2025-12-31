@@ -1,5 +1,5 @@
 import { Component } from "react";
-import "./radial_menu.css";
+import styles from "./radial_menu.module.css";
 
 interface MenuItem {
     id: string;
@@ -90,8 +90,8 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
         const menuParams = this.getMenuParams(visibleMenu);
 
         return (
-            <div className="container" style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
-                <svg viewBox={`0 0 ${containerSize} ${containerSize}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <div className={styles.container} style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
+                <svg className={styles.menu} viewBox={`0 0 ${containerSize} ${containerSize}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                     {Array.from(menuParams).map(([id, params]) => {
                         const adjustedArcParams = {
                             ...params.arc,
