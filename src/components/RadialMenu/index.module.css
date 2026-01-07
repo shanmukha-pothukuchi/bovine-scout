@@ -1,3 +1,8 @@
+.container {
+    font-weight: 500;
+    font-size: 15px;
+}
+
 .container svg {
     display: block;
     color: white;
@@ -6,8 +11,8 @@
 .container path,
 .container circle {
     cursor: pointer;
-    stroke: #4c4a48;
-    color: #292726;
+    color: #252525;
+    stroke: #3b3b39;
 }
 
 .container text,

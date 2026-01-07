@@ -1,0 +1,142 @@
+.container {
+    height: 100%;
+    display: flex;
+}
+
+.sidebar {
+    width: 300px;
+    height: 100%;
+    background: #202020;
+    border-right: 1px solid #2a2a2a;
+    padding: 8px;
+    overflow-y: auto;
+}
+
+.main {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu_tree,
+.tree_item_wrapper {
+    --indicator-height: 3px;
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--indicator-height);
+}
+
+.before_drop_zone,
+.after_drop_zone {
+    height: var(--indicator-height);
+    position: absolute;
+    width: 100%;
+    border-radius: 2px;
+    transition: all 0.1s;
+}
+
+.before_drop_zone {
+    top: 0;
+    transform: translateY(-100%);
+}
+
+.after_drop_zone {
+    bottom: 0;
+    transform: translateY(100%);
+}
+
+.before_drop_zone.over,
+.after_drop_zone.over {
+    background: #3b82f6;
+}
+
+.tree_item_wrapper {
+    position: relative;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.over_inside {
+    background-color: rgba(44, 81, 121, 0.4);
+    outline: 1px solid #3b6b99;
+}
+
+.node {
+    display: flex;
+    border-radius: 5px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.node.selected,
+.node:hover {
+    background: #2c2c2c;
+}
+
+.node>div {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+}
+
+.node .input_container {
+    width: 100%;
+    display: flex;
+}
+
+.node .text_input {
+    all: unset;
+    width: 100%;
+    margin-right: 5px;
+    background-color: #191919;
+    border-bottom: 1px solid rgba(239, 238, 235, 0.5);
+}
+
+.node .text {
+    width: 100%;
+}
+
+.node.edit_mode .actions {
+    display: none;
+}
+
+.node .actions {
+    display: flex;
+    align-items: center;
+    visibility: hidden;
+}
+
+.node:hover .actions {
+    visibility: visible;
+}
+
+.node .icon_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+}
+
+.node .icon_container:hover {
+    background-color: #424242;
+}
+
+.node .icon {
+    opacity: .5;
+    width: 16px;
+}
+
+.drag_overlay {
+    opacity: .4;
+    pointer-events: none;
+}

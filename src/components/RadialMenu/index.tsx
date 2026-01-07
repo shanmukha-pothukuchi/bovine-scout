@@ -1,13 +1,15 @@
 import { Component } from "react";
-import styles from "./radial_menu.module.css";
+import styles from "./index.module.css";
 
-interface MenuItem {
+export interface MenuItem {
     id: string;
     label: string;
     children?: MenuItem[];
 }
 
 interface MenuStyles {
+    className?: string;
+
     centerRadius: number;
     baseRadius: number;
     radiusStep: number;
@@ -20,7 +22,7 @@ interface RadialMenuProps {
     menu: MenuItem[];
     style?: Partial<MenuStyles>;
     value?: MenuItem['id'];
-    onChange?: (id: MenuItem['id']) => void;
+    onSelect?: (id: MenuItem['id']) => void;
     onNavigation?: (path: MenuItem['id'][]) => void;
 }
 
@@ -76,7 +78,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     }
 
     render() {
-        const { centerRadius, strokeWidth, baseRadius, radiusStep } = this.props.style as MenuStyles;
+        const { className, centerRadius, strokeWidth, baseRadius, radiusStep } = this.props.style as MenuStyles;
 
         const visibleMenu = this.getVisibleMenu(this.props.menu, this.state.activePath);
 
@@ -90,7 +92,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
         const menuParams = this.getMenuParams(visibleMenu);
 
         return (
-            <div className={styles.container} style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
+            <div className={`${className || ""} ${styles.container}`} style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
                 <svg className={styles.menu} viewBox={`0 0 ${containerSize} ${containerSize}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                     {Array.from(menuParams).map(([id, params]) => {
                         const adjustedArcParams = {
@@ -170,7 +172,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
         });
 
         if (isLeaf) {
-            this.props.onChange?.(id);
+            this.props.onSelect?.(id);
         }
     }
 
