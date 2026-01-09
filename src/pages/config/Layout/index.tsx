@@ -9,14 +9,11 @@ export default function Layout() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h3>{currentHandle?.title}</h3>
-            </div>
             <div className={styles.body}>
                 <Outlet />
             </div>
             <div className={styles.footer}>
-                <p>{currentHandle?.step}</p>
+                <p>{currentHandle?.title}</p>
             </div>
         </div>
     );
