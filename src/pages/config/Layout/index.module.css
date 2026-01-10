@@ -10,8 +10,8 @@
 }
 
 .footer {
-    border-top: 1px solid #2a2a2a;
-    background: #202020;
+    border-top: 1px solid var(--border);
+    background: var(--sidebar);
     padding: 10px;
 }
 

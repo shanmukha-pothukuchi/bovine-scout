@@ -5,14 +5,14 @@
 
 .container svg {
     display: block;
-    color: white;
+    color: var(--foreground);
 }
 
 .container path,
 .container circle {
     cursor: pointer;
-    color: #252525;
-    stroke: #3b3b39;
+    color: var(--popover);
+    stroke: var(--border);
 }
 
 .container text,

@@ -6,8 +6,8 @@
 .sidebar {
     width: 500px;
     height: 100%;
-    background: #202020;
-    border-right: 1px solid #2a2a2a;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
     overflow-y: auto;
 }
 
@@ -33,7 +33,7 @@
 }
 
 .sidebar_collapse:hover {
-    background-color: #2c2c2c;
+    background: var(--accent);
 }
 
 .icon {
@@ -46,7 +46,7 @@
     --line-height: 1.5;
     --font-size: 16px;
 
-    border: 1px solid #2f2f2f;
+    border: 1px solid var(--border);
 
     display: flex;
 }
@@ -63,7 +63,7 @@
 
 .handle {
     width: 50px;
-    background: #2c2c2c;
+    background: var(--secondary);
     position: relative;
 }
 
@@ -75,7 +75,7 @@
     border-radius: 20px;
     position: relative;
     cursor: pointer;
-    background: #424242;
+    background: var(--accent);
 }
 
 .toggle:not(.active)::before {
@@ -88,7 +88,7 @@
     margin: auto;
     border-radius: 20px;
     transform: translate(-50%, -50%);
-    background: #2c2c2c;
+    background: var(--secondary);
 }
 
 .editor_layer {
@@ -114,7 +114,7 @@
 
 .highlight_layer {
     z-index: 1;
-    color: var(--text-color);
+    color: var(--foreground);
     pointer-events: none;
 }
 
@@ -128,19 +128,19 @@
 
 /* Syntax Colors */
 .hl_keyword {
-    color: #569cd6;
+    color: var(--chart-1);
 }
 
 .hl_string {
-    color: #ce9178;
+    color: var(--chart-2);
 }
 
 .hl_function {
-    color: #d9d9a7;
+    color: var(--chart-3);
 }
 
 .hl_number {
-    color: #b5cda8;
+    color: var(--chart-4);
 }
 
 .autocomplete_container {
@@ -149,8 +149,8 @@
     top: 0;
     left: 0;
 
-    background: #252525;
-    border: 1px solid #414141;
+    background: var(--popover);
+    border: 1px solid var(--border);
     width: 200px;
     padding: 8px;
     border-radius: 10px;
@@ -164,7 +164,7 @@
     padding: 5px 10px;
     border-radius: 5px;
     cursor: pointer;
-    color: #f0efec;
+    color: var(--popover-foreground);
     display: flex;
     justify-content: space-between;
     cursor: pointer;
@@ -179,6 +179,6 @@
 
 .autocomplete_suggestion:hover,
 .autocomplete_suggestion.selected {
-    background-color: #313131;
-    color: white;
+    background: var(--accent);
+    color: var(--accent-foreground);
 }
