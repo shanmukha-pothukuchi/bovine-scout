@@ -52,12 +52,13 @@
 }
 
 .cell * {
-    font-family: "JetBrains Mono", "Space Mono", monospace;
+    font-family: var(--font-mono);
 }
 
 .editor {
     position: relative;
     display: grid;
+    width: 100%;
 }
 
 .handle {

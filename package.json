@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
+    "@fontsource-variable/bricolage-grotesque": "^5.2.10",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@tabler/icons-react": "^3.36.0",
     "@types/textarea-caret": "^3.0.4",
     "nanoid": "^5.1.6",
