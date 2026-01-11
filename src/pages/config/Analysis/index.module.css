@@ -9,16 +9,29 @@
     background: var(--sidebar);
     border-right: 1px solid var(--border);
     overflow-y: auto;
+    display: flex;
+}
+
+.strip {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: var(--secondary);
+    border-right: 1px solid var(--border);
+}
+
+.calculations_panel,
+.builder_panel {
+    flex: 1;
 }
 
 .top_bar {
-    padding: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin: 8px;
 }
 
-.sidebar_collapse {
+.icon_container {
     --width: 30px;
 
     display: flex;
@@ -32,7 +45,11 @@
     cursor: pointer;
 }
 
-.sidebar_collapse:hover {
+.icon_container:hover {
+    background: var(--accent);
+}
+
+.strip .icon_container.active {
     background: var(--accent);
 }
 
@@ -63,7 +80,7 @@
 
 .handle {
     width: 50px;
-    background: var(--secondary);
+    background: var(--color-muted);
     position: relative;
 }
 
@@ -98,7 +115,7 @@
 
     width: 100%;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     box-sizing: border-box;
     font-size: var(--font-size);
     line-height: var(--line-height);
@@ -128,19 +145,19 @@
 
 /* Syntax Colors */
 .hl_keyword {
-    color: var(--chart-1);
+    color: #569cd6;
 }
 
 .hl_string {
-    color: var(--chart-2);
+    color: #ce9178;
 }
 
 .hl_function {
-    color: var(--chart-3);
+    color: #d9d9a7;
 }
 
 .hl_number {
-    color: var(--chart-4);
+    color: #b5cda8;
 }
 
 .autocomplete_container {
