@@ -103,8 +103,7 @@ const getAutoCompleteSuggestions = (word: string) => {
     return autoCompleteSuggestions.filter((s) => s.word.startsWith(word));
 }
 
-export function Cell() {
-    const [value, setValue] = useState("");
+export function Cell({ value, onChange }: { value: string; onChange: (value: string) => void }) {
     const [replaceRange, setReplaceRange] = useState<{ start: number; end: number } | null>(null);
     const [autoCompleteMatches, setAutoCompleteMatches] = useState<AutoCompleteSuggestion[]>([]);
     const [autoCompleteBoxPos, setAutoCompleteBoxPos] = useState<{ top: number; left: number } | null>();
@@ -116,7 +115,7 @@ export function Cell() {
     const textHighlights = useMemo(() => getTextHighlights(value), [value]);
 
     const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        setValue(e.target.value);
+        onChange(e.target.value);
 
         const cursor = e.target.selectionStart;
 
@@ -141,7 +140,7 @@ export function Cell() {
 
         const { start, end } = replaceRange;
 
-        setValue((prev) => prev.substring(0, start) + replacement + prev.substring(end));
+        onChange(value.substring(0, start) + replacement + value.substring(end));
 
         requestAnimationFrame(() => {
             inputLayerRef.current?.setSelectionRange(
@@ -164,9 +163,7 @@ export function Cell() {
         const start = el.selectionStart;
         const end = el.selectionEnd;
 
-        setValue(prev =>
-            prev.slice(0, start) + insert + prev.slice(end)
-        );
+        onChange(value.slice(0, start) + insert + value.slice(end));
 
         requestAnimationFrame(() => {
             const pos = start + insert.length;
