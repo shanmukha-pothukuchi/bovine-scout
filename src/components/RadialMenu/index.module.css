@@ -1,8 +1,3 @@
-.container {
-    font-weight: 500;
-    font-size: 15px;
-}
-
 .container svg {
     display: block;
     color: var(--foreground);
@@ -13,6 +8,10 @@
     cursor: pointer;
     color: var(--popover);
     stroke: var(--border);
+}
+
+.center_icon path {
+    stroke: var(--foreground);
 }
 
 .container text,

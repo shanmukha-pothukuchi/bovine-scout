@@ -1,3 +1,4 @@
+import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
 import styles from "./index.module.css";
 
@@ -16,6 +17,9 @@ interface MenuStyles {
     strokeWidth: number;
     maxLayerArcLength: number;
     maxItemArcLength: number;
+
+    fontSize: number;
+    iconSize: number;
 }
 
 interface RadialMenuProps {
@@ -56,6 +60,9 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
             strokeWidth: 2,
             maxLayerArcLength: 600,
             maxItemArcLength: 100,
+
+            fontSize: 14,
+            iconSize: 20
         },
     } as const;
 
@@ -78,7 +85,15 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     }
 
     render() {
-        const { className, centerRadius, strokeWidth, baseRadius, radiusStep } = this.props.style as MenuStyles;
+        const {
+            className,
+            centerRadius,
+            strokeWidth,
+            baseRadius,
+            radiusStep,
+            fontSize,
+            iconSize
+        } = this.props.style as MenuStyles;
 
         const visibleMenu = this.getVisibleMenu(this.props.menu, this.state.activePath);
 
@@ -112,6 +127,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                                     textAnchor="middle"
                                     dominantBaseline="middle"
                                     fill="currentColor"
+                                    fontSize={fontSize}
                                 >
                                     {params.text.label}
                                 </text>
@@ -127,9 +143,24 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                             strokeWidth={strokeWidth}
                             fill="currentColor"
                         />
+
+                        <g
+                            className={styles.center_icon}
+                            transform={`translate(${centerX}, ${centerY})`}
+                        >
+                            <g
+                                transform={`translate(${-iconSize / 2}, ${-iconSize / 2})`}
+                            >
+                                {this.state.activePath.length > 0 ? (
+                                    <IconArrowLeft width={iconSize} height={iconSize} />
+                                ) : (
+                                    <IconX width={iconSize} height={iconSize} />
+                                )}
+                            </g>
+                        </g>
                     </g>
                 </svg>
-            </div>
+            </div >
         );
     }
 

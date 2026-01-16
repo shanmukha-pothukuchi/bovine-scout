@@ -16,6 +16,9 @@ import RadialMenu, { type MenuItem } from "../../../components/RadialMenu";
 import styles from "./index.module.css";
 import { Node } from "./Node";
 import { TreeNode } from "./TreeNode";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { IconPlus } from "@tabler/icons-react";
 
 export default function MenuEditor() {
     const [menuTree, setMenuTree] = useState<MenuItem[]>([
@@ -174,6 +177,14 @@ export default function MenuEditor() {
         });
     };
 
+    const [gamePeriod, setGamePeriod] = useState<string | null>("auto");
+
+    const calculationContexts = new Map([
+        ["auto", "Auto"],
+        ["tele_op", "Tele-Op"],
+        ["end_game", "End Game"],
+    ]);
+
     return (
         <div className={styles.container}>
             <DndContext
@@ -183,6 +194,36 @@ export default function MenuEditor() {
                 onDragEnd={handleDragEnd}
             >
                 <div className={styles.sidebar}>
+                    <div className={styles.top_bar}>
+                        <Select
+                            value={gamePeriod}
+                            onValueChange={setGamePeriod}
+                        >
+                            <SelectTrigger>
+                                <SelectValue>
+                                    {calculationContexts.get(gamePeriod ?? "") ??
+                                        "Select game period"}
+                                </SelectValue>
+                            </SelectTrigger>
+
+                            <SelectContent align="start">
+                                {Array.from(calculationContexts.entries()).map(
+                                    ([value, label]) => (
+                                        <SelectItem key={value} value={value}>
+                                            {label}
+                                        </SelectItem>
+                                    )
+                                )}
+                            </SelectContent>
+                        </Select>
+
+                        <Button variant="ghost" size="icon" onClick={() => {
+                            setMenuTree(prev => [...prev, { id: nanoid(), label: "New Item" }])
+                        }}>
+                            <IconPlus className={styles.add_icon} />
+                        </Button>
+                    </div>
+
                     <TreeNode
                         tree={menuTree}
                         editItem={editItem}

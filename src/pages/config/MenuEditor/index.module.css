@@ -12,6 +12,13 @@
     overflow-y: auto;
 }
 
+.top_bar {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .main {
     width: 100%;
     display: flex;
@@ -59,16 +66,14 @@
 }
 
 .over_inside {
-    background: var(--accent);
-    opacity: 0.4;
+    background: var(--color-muted);
     outline: 1px solid var(--ring);
 }
 
 .node {
     display: flex;
     border-radius: 5px;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 14px;
     padding: 5px;
     cursor: pointer;
     user-select: none;
@@ -76,7 +81,7 @@
 
 .node.selected,
 .node:hover {
-    background: var(--accent);
+    background: var(--color-muted);
 }
 
 .node>div {
@@ -118,14 +123,16 @@
 }
 
 .node .icon_container {
+    --width: 20px;
+
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 4px;
-    min-width: 20px;
-    min-height: 20px;
-    max-width: 20px;
-    max-height: 20px;
+    min-width: var(--width);
+    min-height: var(--width);
+    max-width: var(--width);
+    max-height: var(--width);
 }
 
 .node .icon_container:hover {
@@ -135,6 +142,10 @@
 .node .icon {
     opacity: .5;
     width: 16px;
+}
+
+.add_icon {
+    opacity: .5;
 }
 
 .drag_overlay {
