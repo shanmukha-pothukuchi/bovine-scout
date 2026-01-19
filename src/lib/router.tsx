@@ -1,11 +1,13 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import type { ConfigRouteHandle } from "./route-handles";
+import Analysis from "../pages/config/Analysis";
+import FormEditor from "../pages/config/FormEditor";
+import ConfigLayout from "../pages/config/Layout";
+import MenuEditor from "../pages/config/MenuEditor";
 
-import Analysis from "../../pages/config/Analysis";
-import FormEditor from "../../pages/config/FormEditor";
-import ConfigLayout from "../../pages/config/Layout";
-import MenuEditor from "../../pages/config/MenuEditor";
+export interface ConfigRouteHandle {
+    title: string;
+}
 
 export const router = createBrowserRouter([
     {

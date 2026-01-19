@@ -1,0 +1,48 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createEntity, createEntityComponent } from "@/lib/form-builder";
+import { labelAttr } from "@/components/form_builder/attributes/label";
+import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
+import * as z from "zod";
+
+export const numberEntity = createEntity({
+    name: "number",
+    attributes: {
+        label: labelAttr,
+        placeholder: placeholderAttr,
+    },
+    defaultValue: 0,
+    validate: (value: number) => {
+        const schema = z.number();
+        return schema.parse(value);
+    },
+});
+
+export const NumberEntityComponent = createEntityComponent(
+    numberEntity,
+    ({ attributes, value, setValue, validateValue, error }) => {
+        const { label, placeholder } = attributes;
+
+        return (
+            <div className="w-full space-y-2">
+                <Label>
+                    {label}
+                </Label>
+
+                <Input
+                    type="number"
+                    value={value}
+                    placeholder={placeholder}
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={validateValue}
+                />
+
+                {error && (
+                    <div className="text-destructive text-sm">
+                        <span>{error}</span>
+                    </div>
+                )}
+            </div>
+        );
+    }
+);
