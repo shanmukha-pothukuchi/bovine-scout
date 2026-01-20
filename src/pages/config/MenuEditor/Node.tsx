@@ -2,7 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { IconCheck, IconChevronRight, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { MenuItem } from "../../../components/RadialMenu";
-import styles from "./index.module.css";
+
 
 interface NodeProps {
     item: MenuItem;
@@ -41,55 +41,57 @@ export function Node({
     });
 
     return (
+
         <div
-            className={`${styles.node} ${selected && styles.selected} ${editMode && styles.edit_mode}`}
+            className={`flex rounded-md text-sm p-1.5 cursor-pointer select-none group ${selected ? "bg-muted" : "hover:bg-muted"}`}
             onClick={() => onSelect()}
             ref={setDraggableRef}
             {...listeners}
             {...attributes}
         >
             <span style={{ width: indent * 10 }} />
-            <div>
-                <span className={styles.icon_container}>
-                    <IconChevronRight className={styles.icon} />
+            <div className="flex gap-1.5 items-center w-full">
+                <span className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent">
+                    <IconChevronRight className="opacity-50 w-4" />
                 </span>
 
                 {editMode ? (
-                    <div className={styles.input_container}>
+                    <div className="w-full flex">
                         <input
-                            className={styles.text_input}
+                            className="bg-input border-b border-border w-full mr-1.5 appearance-none outline-none"
                             value={tempText}
                             onChange={e => setTempText(e.target.value)}
                         />
                         <span
-                            className={styles.icon_container}
+                            className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
                             onClick={() => onCommit(null)}
                         >
-                            <IconX className={styles.icon} />
+                            <IconX className="opacity-50 w-4" />
                         </span>
                         <span
-                            className={styles.icon_container}
+                            className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
                             onClick={() => onCommit(tempText)}
                         >
-                            <IconCheck className={styles.icon} />
+                            <IconCheck className="opacity-50 w-4" />
                         </span>
                     </div>
                 ) : (
-                    <span className={styles.text}>{item.label}</span>
+                    <span className="w-full">{item.label}</span>
                 )}
 
-                {!hideActions && <div className={styles.actions}>
-                    <span className={styles.icon_container} onClick={onDelete}>
-                        <IconTrash className={styles.icon} />
+                {!hideActions && <div className={`flex items-center invisible group-hover:visible ${editMode ? "hidden" : ""}`}>
+                    <span className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent" onClick={onDelete}>
+                        <IconTrash className="opacity-50 w-4" />
                     </span>
-                    <span className={styles.icon_container} onClick={onEdit}>
-                        <IconPencil className={styles.icon} />
+                    <span className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent" onClick={onEdit}>
+                        <IconPencil className="opacity-50 w-4" />
                     </span>
-                    <span className={styles.icon_container} onClick={onAdd}>
-                        <IconPlus className={styles.icon} />
+                    <span className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent" onClick={onAdd}>
+                        <IconPlus className="opacity-50 w-4" />
                     </span>
                 </div>}
             </div>
         </div>
     );
+
 }

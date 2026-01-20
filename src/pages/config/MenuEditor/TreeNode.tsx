@@ -1,6 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { MenuItem } from "../../../components/RadialMenu";
-import styles from "./index.module.css";
+
 import { Node } from "./Node";
 
 interface TreeNodeProps {
@@ -22,10 +22,10 @@ function TreeItem({ isTopLevel, tree, item, index, ...props }: { item: MenuItem;
     const { setNodeRef: setAfterRef, isOver: isOverAfter } = useDroppable({ id: `${item.id}::after` });
 
     return (
-        <div className={`${styles.tree_item_wrapper} ${isOverInside ? styles.over_inside : ''}`}>
+        <div className={`flex flex-col gap-1 relative rounded transition-colors duration-200 ${isOverInside ? "bg-muted outline outline-1 outline-ring" : ''}`}>
             {index === 0 && <div
                 ref={setBeforeRef}
-                className={`${styles.before_drop_zone} ${isOverBefore ? styles.over : ''}`}
+                className={`h-1 absolute w-full rounded-sm transition-all duration-100 top-0 -translate-y-full ${isOverBefore ? "bg-primary" : ''}`}
             />}
 
             <div ref={setInsideRef}>
@@ -62,7 +62,7 @@ function TreeItem({ isTopLevel, tree, item, index, ...props }: { item: MenuItem;
 
             {(index < tree.length - 1 || isTopLevel) && <div
                 ref={setAfterRef}
-                className={`${styles.after_drop_zone} ${isOverAfter ? styles.over : ''}`}
+                className={`h-1 absolute w-full rounded-sm transition-all duration-100 bottom-0 translate-y-full ${isOverAfter ? "bg-primary" : ''}`}
             />}
         </div>
     );
@@ -70,7 +70,8 @@ function TreeItem({ isTopLevel, tree, item, index, ...props }: { item: MenuItem;
 
 export function TreeNode({ tree, isTopLevel = true, ...props }: TreeNodeProps) {
     return (
-        <div className={styles.menu_tree}>
+
+        <div className="flex flex-col gap-1">
             {tree.map((item, i) => (
                 <TreeItem
                     key={item.id}
@@ -83,4 +84,5 @@ export function TreeNode({ tree, isTopLevel = true, ...props }: TreeNodeProps) {
             ))}
         </div>
     );
+
 }

@@ -1,6 +1,6 @@
 import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
-import styles from "./index.module.css";
+
 
 export interface MenuItem {
     id: string;
@@ -107,8 +107,8 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
         const menuParams = this.getMenuParams(visibleMenu);
 
         return (
-            <div className={`${className || ""} ${styles.container}`} style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
-                <svg className={styles.menu} viewBox={`0 0 ${containerSize} ${containerSize}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <div className={`${className || ""}`} style={{ width: `${containerSize}px`, height: `${containerSize}px` }}>
+                <svg className="block text-foreground" viewBox={`0 0 ${containerSize} ${containerSize}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                     {Array.from(menuParams).map(([id, params]) => {
                         const adjustedArcParams = {
                             ...params.arc,
@@ -119,8 +119,8 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                         const item = this.getItemById(this.props.menu, id);
 
                         return (
-                            <g key={id} onClick={() => this.handleItemClick(id, item)}>
-                                <path d={pathData} fill="currentColor" strokeWidth={strokeWidth} />
+                            <g key={id} onClick={() => this.handleItemClick(id, item)} className="cursor-pointer select-none">
+                                <path d={pathData} fill="currentColor" strokeWidth={strokeWidth} className="cursor-pointer text-popover stroke-border" />
                                 <text
                                     x={centerX + params.text.labelRadius * Math.sin((params.text.labelAngle * Math.PI) / 180)}
                                     y={centerY - params.text.labelRadius * Math.cos((params.text.labelAngle * Math.PI) / 180)}
@@ -128,6 +128,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                                     dominantBaseline="middle"
                                     fill="currentColor"
                                     fontSize={fontSize}
+                                    className="cursor-pointer select-none"
                                 >
                                     {params.text.label}
                                 </text>
@@ -135,21 +136,23 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                         );
                     })}
 
-                    <g onClick={() => this.handleCenterClick()}>
+                    <g onClick={() => this.handleCenterClick()} className="cursor-pointer select-none">
                         <circle
                             r={centerRadius}
                             cx={centerX}
                             cy={centerY}
                             strokeWidth={strokeWidth}
                             fill="currentColor"
+                            className="cursor-pointer text-popover stroke-border"
                         />
 
                         <g
-                            className={styles.center_icon}
+                            className="[&_path]:stroke-foreground"
                             transform={`translate(${centerX}, ${centerY})`}
                         >
                             <g
                                 transform={`translate(${-iconSize / 2}, ${-iconSize / 2})`}
+                                className="cursor-pointer select-none"
                             >
                                 {this.state.activePath.length > 0 ? (
                                     <IconArrowLeft width={iconSize} height={iconSize} />

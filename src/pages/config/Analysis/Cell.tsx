@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import getCaretCoordinates from "textarea-caret";
-import styles from "./index.module.css";
 
 interface AutoCompleteSuggestion {
     word: string;
@@ -175,25 +174,26 @@ export function Cell({ value, onChange }: { value: string; onChange: (value: str
     const [active, setActive] = useState(true);
 
     return (
-        <div className={styles.cell}>
-            <div className={styles.handle} onClick={() => setActive(!active)}>
-                <div className={`${styles.toggle} ${active && styles.active}`}></div>
+        <div className="border border-border flex font-mono text-base">
+            <div className="w-12 bg-muted relative" onClick={() => setActive(!active)}>
+                <div className={`aspect-square w-9 m-auto mt-2.5 rounded-full relative cursor-pointer bg-accent 
+                    ${active ? "" : "before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:aspect-square before:w-6.5 before:m-auto before:rounded-full before:-translate-x-1/2 before:-translate-y-1/2 before:bg-secondary"}`}></div>
             </div>
-            <div className={styles.editor}>
-                <pre className={`${styles.editor_layer} ${styles.highlight_layer}`} ref={highlightLayerRef}>
+            <div className="relative grid w-full">
+                <pre className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap break-words overflow-hidden border-none outline-none resize-none font-mono z-10 text-foreground pointer-events-none" ref={highlightLayerRef}>
                     {textHighlights.map((highlight, i) => {
                         switch (highlight.type) {
-                            case "string": return <span key={i} className={styles.hl_string}>{highlight.text}</span>;
-                            case "keyword": return <span key={i} className={styles.hl_keyword}>{highlight.text}</span>;
-                            case "function": return <span key={i} className={styles.hl_function}>{highlight.text}</span>;
-                            case "number": return <span key={i} className={styles.hl_number}>{highlight.text}</span>;
+                            case "string": return <span key={i} className="text-[#ce9178]">{highlight.text}</span>;
+                            case "keyword": return <span key={i} className="text-[#569cd6]">{highlight.text}</span>;
+                            case "function": return <span key={i} className="text-[#d9d9a7]">{highlight.text}</span>;
+                            case "number": return <span key={i} className="text-[#b5cda8]">{highlight.text}</span>;
                             default: return <span key={i}>{highlight.text}</span>;
                         }
                     })}
                     {value.endsWith("\n") && <br />}
                 </pre>
                 <textarea
-                    className={`${styles.editor_layer} ${styles.input_layer}`}
+                    className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap break-words overflow-hidden border-none outline-none resize-none font-mono z-20 text-transparent caret-white"
                     ref={inputLayerRef}
                     spellCheck="false"
                     value={value}
@@ -231,18 +231,18 @@ export function Cell({ value, onChange }: { value: string; onChange: (value: str
                 />
                 {autoCompleteBoxPos && autoCompleteMatches.length > 0 &&
                     <div
-                        className={styles.autocomplete_container}
+                        className="z-50 absolute bg-popover border border-border w-48 p-2 rounded-lg flex flex-col gap-1"
                         style={{ top: autoCompleteBoxPos.top, left: autoCompleteBoxPos.left }}>
                         {autoCompleteMatches.map((match, i) => (
                             <div
                                 key={i}
-                                className={`${styles.autocomplete_suggestion} ${i == selectedMatch && styles.selected}`}
+                                className={`px-2.5 py-1 rounded-md cursor-pointer text-popover-foreground flex justify-between text-base hover:bg-accent hover:text-accent-foreground ${i == selectedMatch && "bg-accent text-accent-foreground"}`}
                                 onClick={() => {
                                     inputLayerRef.current?.focus();
                                     insertText(match.word);
                                 }}>
                                 <span>{match.word}</span>
-                                <span className={styles.suggestion_type}>{match.type}</span>
+                                <span className="opacity-50 my-auto text-sm">{match.type}</span>
                             </div>
                         ))}
                     </div>

@@ -13,7 +13,7 @@ import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import RadialMenu, { type MenuItem } from "../../../components/RadialMenu";
-import styles from "./index.module.css";
+
 import { Node } from "./Node";
 import { TreeNode } from "./TreeNode";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -186,15 +186,16 @@ export default function MenuEditor() {
     ]);
 
     return (
-        <div className={styles.container}>
+
+        <div className="h-full flex">
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div className={styles.sidebar}>
-                    <div className={styles.top_bar}>
+                <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto">
+                    <div className="mb-2 flex items-center justify-between">
                         <Select
                             value={gamePeriod}
                             onValueChange={setGamePeriod}
@@ -220,7 +221,7 @@ export default function MenuEditor() {
                         <Button variant="ghost" size="icon" onClick={() => {
                             setMenuTree(prev => [...prev, { id: nanoid(), label: "New Item" }])
                         }}>
-                            <IconPlus className={styles.add_icon} />
+                            <IconPlus className="opacity-50" />
                         </Button>
                     </div>
 
@@ -250,7 +251,7 @@ export default function MenuEditor() {
                 {createPortal(
                     <DragOverlay dropAnimation={null}>
                         {activeItem && (
-                            <div className={styles.drag_overlay}>
+                            <div className="opacity-40 pointer-events-none">
                                 <Node
                                     item={activeItem}
                                     indent={0}
@@ -270,7 +271,7 @@ export default function MenuEditor() {
                 )}
             </DndContext>
 
-            <div className={styles.main}>
+            <div className="w-full flex items-center justify-center">
                 <RadialMenu menu={menuTree} />
             </div>
         </div>

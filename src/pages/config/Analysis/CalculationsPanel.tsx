@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { Cell } from "./Cell";
-import styles from "./index.module.css";
+
 
 export function CalculationsPanel() {
     const [calculationContext, setCalculationContext] = useState<string | null>("match");
@@ -19,8 +19,8 @@ export function CalculationsPanel() {
     ]);
 
     return (
-        <div className={styles.calculations_panel}>
-            <div className={styles.top_bar}>
+        <div className="flex-1">
+            <div className="m-2">
                 <Select
                     value={calculationContext}
                     onValueChange={setCalculationContext}
@@ -40,9 +40,9 @@ export function CalculationsPanel() {
                     </SelectContent>
                 </Select>
             </div>
-            <div className={styles.cells}>
-                <Cell value="const x = 10;" />
-                <Cell value="ok" />
+            <div>
+                <Cell value="const x = 10;" onChange={() => { }} />
+                <Cell value="ok" onChange={() => { }} />
             </div>
         </div>
     )

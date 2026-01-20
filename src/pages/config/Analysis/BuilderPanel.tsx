@@ -1,8 +1,6 @@
-import styles from "./index.module.css";
-
 export function BuilderPanel() {
     return (
-        <div className={styles.builder_panel}>
+        <div className="flex-1">
             Builder Panel
         </div>
     )
