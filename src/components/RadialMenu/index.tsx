@@ -148,12 +148,12 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                   x={
                     centerX +
                     params.text.labelRadius *
-                      Math.sin((params.text.labelAngle * Math.PI) / 180)
+                    Math.sin((params.text.labelAngle * Math.PI) / 180)
                   }
                   y={
                     centerY -
                     params.text.labelRadius *
-                      Math.cos((params.text.labelAngle * Math.PI) / 180)
+                    Math.cos((params.text.labelAngle * Math.PI) / 180)
                   }
                   textAnchor="middle"
                   dominantBaseline="middle"
@@ -229,21 +229,11 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     const isLeaf = item && (!item.children || item.children.length === 0);
 
     this.setState((state) => {
-      const isActive = state.activePath[state.activePath.length - 1] === id;
-      if (isActive) return state;
-
-      if (
-        isLeaf &&
-        this.getItemById(
-          this.props.menu,
-          state.activePath[state.activePath.length - 1],
-        )?.children?.some((child) => child.id === id)
-      ) {
-        return state;
-      }
+      const path = this.getPathById(this.props.menu, id);
+      if (!path) return state;
 
       return {
-        activePath: this.getPathById(this.props.menu, id) || state.activePath,
+        activePath: isLeaf ? path.slice(0, -1) : path,
       };
     });
 

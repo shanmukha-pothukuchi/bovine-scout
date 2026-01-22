@@ -70,8 +70,10 @@ export function Node({
             "hover:bg-accent": item.children && item.children.length > 0,
           })}
           onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand?.();
+            if (item.children && item.children.length > 0) {
+              e.stopPropagation();
+              onToggleExpand?.();
+            }
           }}
         >
           {item.children && item.children.length > 0 && (
