@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { ENTITY_REGISTRY } from "@/lib/form-builder";
+import { useFormContext } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -45,7 +45,8 @@ export function Entity({ rowId, entity, selected, setSelected }: { rowId: string
         },
     });
 
-    const Component = ENTITY_REGISTRY[entity.name]?.wrapper;
+    const { entityRegistry } = useFormContext();
+    const Component = entityRegistry.current[entity.name]?.wrapper;
 
     return (
         <div

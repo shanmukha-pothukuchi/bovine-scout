@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { makeAttribute, makeEntity } from "@/lib/form-builder";
 import { minAttr } from "@/components/form_builder/attributes/min";
 import { maxAttr } from "@/components/form_builder/attributes/max";
-import * as z from "zod";
+import { z } from "zod";
 import { IconAdjustmentsAlt } from "@tabler/icons-react";
 import { Slider } from "@/components/ui/slider";
 import { labelAttr } from "@/components/form_builder/attributes/label";

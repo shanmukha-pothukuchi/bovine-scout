@@ -1,12 +1,9 @@
-import "@/components/form_builder/entities/number";
-import "@/components/form_builder/entities/slider";
-import "@/components/form_builder/entities/text";
+import { numberEntity } from "@/components/form_builder/entities/number";
+import { sliderEntity } from "@/components/form_builder/entities/slider";
+import { textEntity } from "@/components/form_builder/entities/text";
 
 import {
-    type Attribute,
-    ATTRIBUTE_REGISTRY,
-    ENTITY_REGISTRY,
-    type EntityRegistryEntry,
+    type AttributeRegistryEntry,
     FormProvider,
     useFormContext
 } from "@/lib/form-builder";
@@ -28,8 +25,14 @@ import { Row, type RowStructure } from "./Row";
 
 interface FormStructure { id: string; rows: RowStructure[]; }
 
+const availableEntities = [
+    textEntity,
+    numberEntity,
+    sliderEntity,
+];
+
 function FormEditor({ form }: { form: FormStructure }) {
-    const { state } = useFormContext();
+    const { state, entityRegistry } = useFormContext();
 
     const { setNodeRef } = useDroppable({
         id: "form",
@@ -59,23 +62,21 @@ function FormEditor({ form }: { form: FormStructure }) {
 
                             if (!entityStruct) return null;
 
-                            const entityEntry = ENTITY_REGISTRY[entityStruct.name];
+                            const entityEntry = entityRegistry.current[entityStruct.name];
                             if (!entityEntry) return null;
 
-                            return (Object.values(entityEntry.definition.attributes) as Attribute<any, any>[])
-                                .map((attr) => {
-                                    const attrEntry = ATTRIBUTE_REGISTRY[attr.name];
-                                    if (!attrEntry) return null;
-                                    const Component = attrEntry.wrapper;
+                            return (Object.values<AttributeRegistryEntry<any, any>>(entityEntry.definition.attributes)).map((attrEntry) => {
+                                const Component = attrEntry.wrapper;
+                                const attrName = attrEntry.definition.name;
 
-                                    return <Component key={attr.name} entityId={selected} />;
-                                });
+                                return <Component key={attrName} entityId={selected} />;
+                            });
                         })()}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
                         <div className="grid grid-cols-3 gap-2">
-                            {(Object.values(ENTITY_REGISTRY) as EntityRegistryEntry[]).map((entry) => (
+                            {availableEntities.map((entry) => (
                                 <EntitySwatch
                                     key={entry.definition.name}
                                     name={entry.definition.name}
@@ -262,7 +263,7 @@ function FormEditorContainer() {
 }
 
 export default () => (
-    <FormProvider>
+    <FormProvider entities={availableEntities}>
         <FormEditorContainer />
     </FormProvider>
 );

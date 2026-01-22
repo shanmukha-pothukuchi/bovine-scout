@@ -1,18 +1,15 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ZodError } from 'zod';
 
-export interface EntityRegistryEntry {
-    definition: Entity<any, any, any>;
+export interface EntityRegistryEntry<TName extends string, TAttributes extends Record<string, AttributeRegistryEntry<any, any>>, TValue> {
+    definition: Entity<TName, TAttributes, TValue>;
     wrapper: React.ComponentType<EntityWrapperProps>;
 }
 
-export interface AttributeRegistryEntry {
-    definition: Attribute<any, any>;
+export interface AttributeRegistryEntry<TName extends string, TValue> {
+    definition: Attribute<TName, TValue>;
     wrapper: React.ComponentType<AttributeWrapperProps>;
 }
-
-export const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {}
-export const ATTRIBUTE_REGISTRY: Record<string, AttributeRegistryEntry> = {}
 
 // Utilities & Error Handling
 function getErrorMessage(error: unknown): string {
@@ -27,8 +24,8 @@ function getErrorMessage(error: unknown): string {
 // Types
 export type InferAttributeValue<A> = A extends Attribute<any, infer V> ? V : never;
 
-export type AttributeValues<T extends Record<string, Attribute<any, any>>> = {
-    [K in keyof T]: InferAttributeValue<T[K]>;
+export type AttributeValues<T extends Record<string, AttributeRegistryEntry<any, any>>> = {
+    [K in keyof T]: InferAttributeValue<T[K]['definition']>;
 };
 
 export interface Attribute<TName extends string, TValue> {
@@ -40,7 +37,7 @@ export interface Attribute<TName extends string, TValue> {
 
 export interface Entity<
     TName extends string,
-    TAttributes extends Record<string, Attribute<any, any>>,
+    TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
     TValue
 > {
     name: TName;
@@ -60,10 +57,9 @@ export interface AttributeComponentProps<TValue = unknown> {
     validateValue: () => Promise<void>;
     error: string | null;
     resetError: () => void;
-    entity: EntityStateData;
 }
 
-export interface EntityComponentProps<TAttributes extends Record<string, Attribute<string, any>>, TValue = unknown> {
+export interface EntityComponentProps<TAttributes extends Record<string, AttributeRegistryEntry<any, any>>, TValue = unknown> {
     attributes: AttributeValues<TAttributes>;
     value: TValue;
     setValue: (value: TValue) => void;
@@ -93,8 +89,10 @@ interface FormState {
 // Contexts
 interface FormContextValue {
     state: FormState;
+    entityRegistry: React.RefObject<Record<string, EntityRegistryEntry<any, any, any>>>;
+    attributeRegistry: React.RefObject<Record<string, AttributeRegistryEntry<any, any>>>;
 
-    registerEntity: <TName extends string, TAttributes extends Record<string, Attribute<string, any>>, TValue>(
+    registerEntity: <TName extends string, TAttributes extends Record<string, AttributeRegistryEntry<any, any>>, TValue>(
         entityId: string,
         entity: Entity<TName, TAttributes, TValue>
     ) => void;
@@ -129,14 +127,39 @@ export function useEntityContext() {
 }
 
 // Providers
-export function FormProvider({ children, initialState = {} }: { children: React.ReactNode; initialState?: FormState }) {
+export function FormProvider({
+    children,
+    initialState = {},
+    entities = []
+}: {
+    children: React.ReactNode;
+    initialState?: FormState;
+    entities?: EntityRegistryEntry<any, any, any>[];
+}) {
     const [state, setState] = useState<FormState>(initialState);
+    const entityRegistry = useRef<Record<string, EntityRegistryEntry<any, any, any>>>({});
+    const attributeRegistry = useRef<Record<string, AttributeRegistryEntry<any, any>>>({});
+
+    // Register entities passed as props
+    useEffect(() => {
+        entities.forEach(entityEntry => {
+            const entityDef = entityEntry.definition;
+
+            // Register the entity
+            entityRegistry.current[entityDef.name] = entityEntry;
+
+            // Register all attributes within the entity
+            (Object.values(entityDef.attributes) as AttributeRegistryEntry<any, any>[]).forEach(attrEntry => {
+                attributeRegistry.current[attrEntry.definition.name] = attrEntry;
+            });
+        });
+    }, [entities]);
 
     const getEntityState = useCallback((entityId: string) => {
         return state[entityId];
     }, [state]);
 
-    const registerEntity = useCallback(<TName extends string, TAttributes extends Record<string, Attribute<string, any>>, TValue>(
+    const registerEntity = useCallback(<TName extends string, TAttributes extends Record<string, AttributeRegistryEntry<any, any>>, TValue>(
         entityId: string,
         entity: Entity<TName, TAttributes, TValue>
     ) => {
@@ -145,8 +168,9 @@ export function FormProvider({ children, initialState = {} }: { children: React.
 
             const attributeStates: Record<string, AttributeStateData> = {};
 
-            Object.values(entity.attributes).forEach(attr => {
-                attributeStates[attr.name] = {
+            (Object.entries(entity.attributes) as [string, AttributeRegistryEntry<any, any>][]).forEach(([attrName, attrEntry]) => {
+                const attr = attrEntry.definition;
+                attributeStates[attrName] = {
                     name: attr.name,
                     value: attr.defaultValue,
                     error: null,
@@ -199,20 +223,20 @@ export function FormProvider({ children, initialState = {} }: { children: React.
             currentValue = prev[entityId]?.value;
             entityName = prev[entityId]?.name;
 
-            for (const [name, attrState] of Object.entries(prev[entityId]?.attributes)) {
+            for (const [name, attrState] of Object.entries(prev[entityId]?.attributes || {})) {
                 attributeValues[name] = attrState.value;
             }
 
             return prev;
         });
 
-        const entityDef = ENTITY_REGISTRY[entityName as string].definition;
-        if (!entityDef) return;
+        const entityEntry = entityRegistry.current[entityName as string];
+        if (!entityEntry) return;
 
         try {
-            await entityDef.validate(
+            await entityEntry.definition.validate(
                 currentValue,
-                attributeValues as AttributeValues<typeof entityDef.attributes>
+                attributeValues as AttributeValues<typeof entityEntry.definition.attributes>
             );
             setEntityError(entityId, null);
         } catch (error) {
@@ -262,13 +286,15 @@ export function FormProvider({ children, initialState = {} }: { children: React.
             return prev;
         });
 
-        const entityDef = ENTITY_REGISTRY[entityName!].definition;
-        const attributeDef = entityDef?.attributes[attributeName];
+        const entityEntry = entityRegistry.current[entityName!];
+        const attributeEntry = (Object.values(entityEntry?.definition.attributes || {}) as AttributeRegistryEntry<any, any>[]).find(
+            attrEntry => attrEntry.definition.name === attributeName
+        );
 
-        if (!attributeDef) return;
+        if (!attributeEntry) return;
 
         try {
-            await attributeDef.validate(currentValue);
+            await attributeEntry.definition.validate(currentValue);
             setAttributeError(entityId, attributeName, null);
         } catch (error) {
             setAttributeError(entityId, attributeName, getErrorMessage(error));
@@ -277,6 +303,8 @@ export function FormProvider({ children, initialState = {} }: { children: React.
 
     const contextValue = useMemo(() => ({
         state,
+        entityRegistry,
+        attributeRegistry,
         registerEntity,
         deregisterEntity,
         updateEntityValue,
@@ -286,7 +314,7 @@ export function FormProvider({ children, initialState = {} }: { children: React.
         setAttributeError,
         validateAttribute,
         getEntityState
-    }), [state, registerEntity, updateEntityValue, setEntityError, validateEntity, updateAttributeValue, setAttributeError, validateAttribute, getEntityState]);
+    }), [state, registerEntity, deregisterEntity, updateEntityValue, setEntityError, validateEntity, updateAttributeValue, setAttributeError, validateAttribute, getEntityState]);
 
     return (
         <FormContext.Provider value={contextValue}>
@@ -303,7 +331,7 @@ interface AttributeWrapperProps {
 
 export function makeAttribute<const TName extends string, TValue>(
     options: Attribute<TName, TValue>
-): Attribute<TName, TValue> {
+): AttributeRegistryEntry<TName, TValue> {
     function AttributeWrapper(props: AttributeWrapperProps) {
         const formContext = useFormContext();
         const entityContext = useEntityContext();
@@ -342,18 +370,17 @@ export function makeAttribute<const TName extends string, TValue>(
                     validateValue={validateValue}
                     error={attributeState.error}
                     resetError={resetError}
-                    entity={entityState!}
                 />
             </AttributeContext.Provider>
         );
     }
 
-    ATTRIBUTE_REGISTRY[options.name] = {
+    const registryEntry: AttributeRegistryEntry<TName, TValue> = {
         definition: options,
         wrapper: AttributeWrapper
     };
 
-    return options;
+    return registryEntry;
 }
 
 interface EntityWrapperProps {
@@ -363,11 +390,11 @@ interface EntityWrapperProps {
 
 export function makeEntity<
     const TName extends string,
-    const TAttributes extends Record<string, Attribute<any, any>>,
+    const TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
     TValue
 >(
     options: Entity<TName, TAttributes, TValue>
-): Entity<TName, TAttributes, TValue> {
+): EntityRegistryEntry<TName, TAttributes, TValue> {
     function EntityWrapper({ entityId, defaultEntityState }: EntityWrapperProps) {
         const formContext = useFormContext();
 
@@ -381,9 +408,10 @@ export function makeEntity<
 
         const attributesProp = {} as AttributeValues<TAttributes>;
         for (const key in options.attributes) {
-            const attr = options.attributes[key];
+            const attrEntry = options.attributes[key];
+            const attr = attrEntry.definition;
             const state = entityState.attributes[attr.name];
-            attributesProp[key] = state?.value ?? attr.defaultValue;
+            (attributesProp as any)[key] = state?.value ?? attr.defaultValue;
         }
 
         const setValue = (newValue: TValue) => {
@@ -412,10 +440,10 @@ export function makeEntity<
         );
     }
 
-    ENTITY_REGISTRY[options.name] = {
+    const registryEntry: EntityRegistryEntry<TName, TAttributes, TValue> = {
         definition: options,
         wrapper: EntityWrapper
     };
 
-    return options;
+    return registryEntry;
 }

@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { makeAttribute } from "@/lib/form-builder";
-import * as z from "zod";
+import { z } from "zod";
 
 export const placeholderAttr = makeAttribute({
     name: "placeholder",

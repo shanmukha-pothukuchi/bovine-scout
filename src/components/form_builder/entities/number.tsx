@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { makeEntity } from "@/lib/form-builder";
 import { labelAttr } from "@/components/form_builder/attributes/label";
 import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
-import * as z from "zod";
+import { z } from "zod";
 import { IconNumber } from "@tabler/icons-react";
 
 export const numberEntity = makeEntity({
