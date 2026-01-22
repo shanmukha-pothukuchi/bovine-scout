@@ -3,25 +3,25 @@ import { Label } from "@/components/ui/label";
 import { makeAttribute } from "@/lib/form-builder";
 import * as z from "zod";
 
-export const placeholderAttr = makeAttribute({
-    name: "placeholder",
-    defaultValue: "",
-    validate: (value: string) => {
-        const schema = z.string().min(0).max(48);
+export const minAttr = makeAttribute({
+    name: "min",
+    defaultValue: 0,
+    validate: (value: number) => {
+        const schema = z.number();
         return schema.parse(value);
     },
     component: ({ value, setValue, validateValue, error }) => {
         return (
             <div className="w-full max-w-sm space-y-2">
-                <Label htmlFor="placeholder">
-                    Placeholder
+                <Label htmlFor="min">
+                    Min
                 </Label>
                 <Input
-                    id="placeholder"
-                    type="text"
-                    placeholder="Placeholder text"
+                    id="min"
+                    type="number"
+                    placeholder="Min value"
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
+                    onChange={(e) => setValue(parseInt(e.target.value))}
                     onBlur={validateValue}
                 />
                 {error && (

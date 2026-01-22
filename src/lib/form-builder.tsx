@@ -1,11 +1,24 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import z, { ZodError } from 'zod';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ZodError } from 'zod';
+
+export interface EntityRegistryEntry {
+    definition: Entity<any, any, any>;
+    wrapper: React.ComponentType<EntityWrapperProps>;
+}
+
+export interface AttributeRegistryEntry {
+    definition: Attribute<any, any>;
+    wrapper: React.ComponentType<AttributeWrapperProps>;
+}
+
+export const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {}
+export const ATTRIBUTE_REGISTRY: Record<string, AttributeRegistryEntry> = {}
 
 // Utilities & Error Handling
 function getErrorMessage(error: unknown): string {
     if (typeof error === 'string') return error;
     if (error instanceof ZodError) {
-        return z.prettifyError(error);
+        return error.issues.map(issue => issue.message).join(', ');
     }
     if (error instanceof Error) return error.message;
     return "An unexpected validation error occurred";
@@ -22,6 +35,7 @@ export interface Attribute<TName extends string, TValue> {
     name: TName;
     defaultValue: TValue;
     validate: (value: TValue) => (TValue | null | undefined) | Promise<TValue | null | undefined>;
+    component: React.ComponentType<AttributeComponentProps<TValue>>;
 }
 
 export interface Entity<
@@ -30,12 +44,14 @@ export interface Entity<
     TValue
 > {
     name: TName;
+    icon: React.ReactNode;
     attributes: TAttributes;
     defaultValue: TValue;
     validate: (
         value: TValue,
         attributes: AttributeValues<TAttributes>
     ) => (TValue | null | undefined) | Promise<TValue | null | undefined>;
+    component: React.ComponentType<EntityComponentProps<TAttributes, TValue>>;
 }
 
 export interface AttributeComponentProps<TValue = unknown> {
@@ -71,36 +87,34 @@ interface EntityStateData {
 }
 
 interface FormState {
-    [rowId: string]: {
-        [entityId: string]: EntityStateData;
-    };
+    [entityId: string]: EntityStateData;
 }
 
 // Contexts
 interface FormContextValue {
     state: FormState;
+
     registerEntity: <TName extends string, TAttributes extends Record<string, Attribute<string, any>>, TValue>(
-        rowId: string,
         entityId: string,
         entity: Entity<TName, TAttributes, TValue>
     ) => void;
+    deregisterEntity: (entityId: string) => void;
 
     // Entity Methods
-    updateEntityValue: (rowId: string, entityId: string, value: unknown) => void;
-    setEntityError: (rowId: string, entityId: string, error: string | null) => void;
-    validateEntity: (rowId: string, entityId: string) => Promise<void>;
+    updateEntityValue: (entityId: string, value: unknown) => void;
+    setEntityError: (entityId: string, error: string | null) => void;
+    validateEntity: (entityId: string) => Promise<void>;
 
     // Attribute Methods
-    updateAttributeValue: (rowId: string, entityId: string, attributeName: string, value: unknown) => void;
-    setAttributeError: (rowId: string, entityId: string, attributeName: string, error: string | null) => void;
-    validateAttribute: (rowId: string, entityId: string, attributeName: string) => Promise<void>;
+    updateAttributeValue: (entityId: string, attributeName: string, value: unknown) => void;
+    setAttributeError: (entityId: string, attributeName: string, error: string | null) => void;
+    validateAttribute: (entityId: string, attributeName: string) => Promise<void>;
 
-    getEntityState: (rowId: string, entityId: string) => EntityStateData | undefined;
+    getEntityState: (entityId: string) => EntityStateData | undefined;
 }
 
 const FormContext = createContext<FormContextValue | null>(null);
-const RowContext = createContext<{ rowId: string } | null>(null);
-const EntityContext = createContext<{ entityId: string; entityName: string } | null>(null);
+const EntityContext = createContext<{ entityId: string } | null>(null);
 const AttributeContext = createContext<{ attributeName: string } | null>(null);
 
 // Hooks
@@ -108,10 +122,6 @@ export function useFormContext() {
     const context = useContext(FormContext);
     if (!context) throw new Error('useFormContext must be used within a FormProvider');
     return context;
-}
-
-export function useRowContext() {
-    return useContext(RowContext);
 }
 
 export function useEntityContext() {
@@ -122,24 +132,16 @@ export function useEntityContext() {
 export function FormProvider({ children, initialState = {} }: { children: React.ReactNode; initialState?: FormState }) {
     const [state, setState] = useState<FormState>(initialState);
 
-    const schemasRef = useRef<Record<string, Record<string, Entity<any, any, any>>>>({});
-
-    const getEntityState = useCallback((rowId: string, entityId: string) => {
-        return state[rowId]?.[entityId];
+    const getEntityState = useCallback((entityId: string) => {
+        return state[entityId];
     }, [state]);
 
     const registerEntity = useCallback(<TName extends string, TAttributes extends Record<string, Attribute<string, any>>, TValue>(
-        rowId: string,
         entityId: string,
         entity: Entity<TName, TAttributes, TValue>
     ) => {
-        if (!schemasRef.current[rowId]) {
-            schemasRef.current[rowId] = {};
-        }
-        schemasRef.current[rowId][entityId] = entity;
-
         setState(prev => {
-            if (prev[rowId]?.[entityId]) return prev;
+            if (prev[entityId]) return prev;
 
             const attributeStates: Record<string, AttributeStateData> = {};
 
@@ -153,61 +155,58 @@ export function FormProvider({ children, initialState = {} }: { children: React.
 
             return {
                 ...prev,
-                [rowId]: {
-                    ...prev[rowId],
-                    [entityId]: {
-                        name: entity.name,
-                        value: entity.defaultValue,
-                        error: null,
-                        attributes: attributeStates,
-                    },
+                [entityId]: {
+                    name: entity.name,
+                    value: entity.defaultValue,
+                    error: null,
+                    attributes: attributeStates,
                 },
             };
         });
     }, []);
 
-    const updateEntityValue = useCallback((rowId: string, entityId: string, value: unknown) => {
+    const deregisterEntity = useCallback((entityId: string) => {
+        setState(prev => {
+            const newState = { ...prev };
+            delete newState[entityId];
+            return newState;
+        });
+    }, []);
+
+    const updateEntityValue = useCallback((entityId: string, value: unknown) => {
         setState(prev => ({
             ...prev,
-            [rowId]: {
-                ...prev[rowId],
-                [entityId]: {
-                    ...prev[rowId]?.[entityId]!,
-                    value,
-                },
+            [entityId]: {
+                ...prev[entityId]!,
+                value,
             },
         }));
     }, []);
 
-    const setEntityError = useCallback((rowId: string, entityId: string, error: string | null) => {
+    const setEntityError = useCallback((entityId: string, error: string | null) => {
         setState(prev => ({
             ...prev,
-            [rowId]: {
-                ...prev[rowId],
-                [entityId]: { ...prev[rowId]?.[entityId]!, error },
-            },
+            [entityId]: { ...prev[entityId]!, error },
         }));
     }, []);
 
-    const validateEntity = useCallback(async (rowId: string, entityId: string) => {
+    const validateEntity = useCallback(async (entityId: string) => {
         let currentValue: unknown;
+        let entityName: unknown;
         let attributeValues: Record<string, unknown> = {};
 
         await setState(prev => {
-            const entityState = prev[rowId]?.[entityId];
+            currentValue = prev[entityId]?.value;
+            entityName = prev[entityId]?.name;
 
-            if (entityState) {
-                currentValue = entityState.value;
-
-                for (const [name, attrState] of Object.entries(entityState.attributes)) {
-                    attributeValues[name] = attrState.value;
-                }
+            for (const [name, attrState] of Object.entries(prev[entityId]?.attributes)) {
+                attributeValues[name] = attrState.value;
             }
 
             return prev;
         });
 
-        const entityDef = schemasRef.current[rowId]?.[entityId];
+        const entityDef = ENTITY_REGISTRY[entityName as string].definition;
         if (!entityDef) return;
 
         try {
@@ -215,74 +214,71 @@ export function FormProvider({ children, initialState = {} }: { children: React.
                 currentValue,
                 attributeValues as AttributeValues<typeof entityDef.attributes>
             );
-            setEntityError(rowId, entityId, null);
+            setEntityError(entityId, null);
         } catch (error) {
-            setEntityError(rowId, entityId, getErrorMessage(error));
+            setEntityError(entityId, getErrorMessage(error));
         }
     }, [setEntityError]);
 
-    const updateAttributeValue = useCallback((rowId: string, entityId: string, attributeName: string, value: unknown) => {
+    const updateAttributeValue = useCallback((entityId: string, attributeName: string, value: unknown) => {
         setState(prev => ({
             ...prev,
-            [rowId]: {
-                ...prev[rowId],
-                [entityId]: {
-                    ...prev[rowId]?.[entityId]!,
-                    attributes: {
-                        ...prev[rowId]?.[entityId]?.attributes,
-                        [attributeName]: {
-                            ...prev[rowId]?.[entityId]?.attributes?.[attributeName]!,
-                            value,
-                        },
+            [entityId]: {
+                ...prev[entityId]!,
+                attributes: {
+                    ...prev[entityId]?.attributes,
+                    [attributeName]: {
+                        ...prev[entityId]?.attributes?.[attributeName]!,
+                        value,
                     },
                 },
             },
         }));
     }, []);
 
-    const setAttributeError = useCallback((rowId: string, entityId: string, attributeName: string, error: string | null) => {
+    const setAttributeError = useCallback((entityId: string, attributeName: string, error: string | null) => {
         setState(prev => ({
             ...prev,
-            [rowId]: {
-                ...prev[rowId],
-                [entityId]: {
-                    ...prev[rowId]?.[entityId]!,
-                    attributes: {
-                        ...prev[rowId]?.[entityId]?.attributes,
-                        [attributeName]: {
-                            ...prev[rowId]?.[entityId]?.attributes?.[attributeName]!,
-                            error,
-                        },
+            [entityId]: {
+                ...prev[entityId]!,
+                attributes: {
+                    ...prev[entityId]?.attributes,
+                    [attributeName]: {
+                        ...prev[entityId]?.attributes?.[attributeName]!,
+                        error,
                     },
                 },
             },
         }));
     }, []);
 
-    const validateAttribute = useCallback(async (rowId: string, entityId: string, attributeName: string) => {
+    const validateAttribute = useCallback(async (entityId: string, attributeName: string) => {
         let currentValue: unknown;
+        let entityName: string | undefined;
 
         await setState(prev => {
-            currentValue = prev[rowId]?.[entityId]?.attributes?.[attributeName]?.value;
+            currentValue = prev[entityId]?.attributes?.[attributeName]?.value;
+            entityName = prev[entityId]?.name;
             return prev;
         });
 
-        const entityDef = schemasRef.current[rowId]?.[entityId];
+        const entityDef = ENTITY_REGISTRY[entityName!].definition;
         const attributeDef = entityDef?.attributes[attributeName];
 
         if (!attributeDef) return;
 
         try {
             await attributeDef.validate(currentValue);
-            setAttributeError(rowId, entityId, attributeName, null);
+            setAttributeError(entityId, attributeName, null);
         } catch (error) {
-            setAttributeError(rowId, entityId, attributeName, getErrorMessage(error));
+            setAttributeError(entityId, attributeName, getErrorMessage(error));
         }
     }, [setAttributeError]);
 
     const contextValue = useMemo(() => ({
         state,
         registerEntity,
+        deregisterEntity,
         updateEntityValue,
         setEntityError,
         validateEntity,
@@ -299,141 +295,127 @@ export function FormProvider({ children, initialState = {} }: { children: React.
     );
 }
 
-export function RowProvider({ rowId, children }: { rowId: string; children: React.ReactNode }) {
-    return <RowContext.Provider value={{ rowId }}>{children}</RowContext.Provider>;
-}
-
-export function EntityProvider({ entityId, entityName, children }: { entityId: string; entityName: string; children: React.ReactNode }) {
-    return <EntityContext.Provider value={{ entityId, entityName }}>{children}</EntityContext.Provider>;
-}
-
 // Factory Functions
-export function createAttribute<const TName extends string, TValue>(
+interface AttributeWrapperProps {
+    entityId: string;
+    defaultAttributeState?: AttributeStateData;
+}
+
+export function makeAttribute<const TName extends string, TValue>(
     options: Attribute<TName, TValue>
 ): Attribute<TName, TValue> {
-    return options;
-}
-
-export function createEntity<
-    const TName extends string,
-    const TAttributes extends Record<string, Attribute<any, any>>,
-    TValue
->(options: Entity<TName, TAttributes, TValue>): Entity<TName, TAttributes, TValue> {
-    return options;
-}
-
-// Component Wrappers
-export function createAttributeComponent<const TName extends string, TValue>(
-    attribute: Attribute<TName, TValue>,
-    Component: React.ComponentType<AttributeComponentProps<TValue>>
-) {
-    return function AttributeWrapper(props: { entityId?: string; rowId?: string }) {
+    function AttributeWrapper(props: AttributeWrapperProps) {
         const formContext = useFormContext();
-        const rowContext = useRowContext();
         const entityContext = useEntityContext();
-
-        const rowId = props.rowId ?? rowContext?.rowId;
         const entityId = props.entityId ?? entityContext?.entityId;
 
         const setValue = useCallback((value: TValue) => {
-            if (rowId && entityId) {
-                formContext.updateAttributeValue(rowId, entityId, attribute.name, value);
+            if (entityId) {
+                formContext.updateAttributeValue(entityId, options.name, value);
             }
-        }, [formContext, rowId, entityId]);
+        }, [formContext, entityId]);
 
         const validateValue = useCallback(async () => {
-            if (rowId && entityId) {
-                await formContext.validateAttribute(rowId, entityId, attribute.name);
+            if (entityId) {
+                await formContext.validateAttribute(entityId, options.name);
             }
-        }, [formContext, rowId, entityId]);
+        }, [formContext, entityId]);
 
         const resetError = useCallback(() => {
-            if (rowId && entityId) {
-                formContext.setAttributeError(rowId, entityId, attribute.name, null);
+            if (entityId) {
+                formContext.setAttributeError(entityId, options.name, null);
             }
-        }, [formContext, rowId, entityId]);
+        }, [formContext, entityId]);
 
-        if (!rowId || !entityId) return null;
+        if (!entityId) return null;
 
-        const entityState = formContext.getEntityState(rowId, entityId);
+        const entityState = formContext.getEntityState(entityId);
+        const attributeState = entityState?.attributes[options.name] ?? props.defaultAttributeState;
 
-        if (!entityState || !entityState.attributes[attribute.name]) return null;
-
-        const attributeState = entityState.attributes[attribute.name];
+        if (!attributeState) return null;
 
         return (
-            <AttributeContext.Provider value={{ attributeName: attribute.name }}>
-                <Component
+            <AttributeContext.Provider value={{ attributeName: options.name }}>
+                <options.component
                     value={attributeState.value as TValue}
                     setValue={setValue}
                     validateValue={validateValue}
                     error={attributeState.error}
                     resetError={resetError}
-                    entity={entityState}
+                    entity={entityState!}
                 />
             </AttributeContext.Provider>
         );
+    }
+
+    ATTRIBUTE_REGISTRY[options.name] = {
+        definition: options,
+        wrapper: AttributeWrapper
     };
+
+    return options;
 }
 
-export function createEntityComponent<
+interface EntityWrapperProps {
+    entityId: string;
+    defaultEntityState?: EntityStateData;
+}
+
+export function makeEntity<
     const TName extends string,
-    const TAttributes extends Record<string, Attribute<string, any>>,
+    const TAttributes extends Record<string, Attribute<any, any>>,
     TValue
 >(
-    entity: Entity<TName, TAttributes, TValue>,
-    Component: React.ComponentType<EntityComponentProps<TAttributes, any>>
-) {
-    return function EntityWrapper({ entityId, ...props }: { rowId?: string; entityId: string; }) {
+    options: Entity<TName, TAttributes, TValue>
+): Entity<TName, TAttributes, TValue> {
+    function EntityWrapper({ entityId, defaultEntityState }: EntityWrapperProps) {
         const formContext = useFormContext();
-        const rowContext = useRowContext();
-
-        const rowId = props.rowId ?? rowContext?.rowId;
-
-        if (!rowId) {
-            console.warn(`EntityWrapper (${entity.name}): Missing 'rowId'.`);
-            return null;
-        }
 
         useEffect(() => {
-            formContext.registerEntity(rowId, entityId, entity);
-        }, [rowId, entityId]);
+            formContext.registerEntity(entityId, options);
+        }, [entityId]);
 
-        const entityState = formContext.getEntityState(rowId, entityId);
+        const entityState = formContext.getEntityState(entityId) ?? defaultEntityState;
 
         if (!entityState) return null;
 
         const attributesProp = {} as AttributeValues<TAttributes>;
-        for (const key in entity.attributes) {
-            const attr = entity.attributes[key];
+        for (const key in options.attributes) {
+            const attr = options.attributes[key];
             const state = entityState.attributes[attr.name];
-
             attributesProp[key] = state?.value ?? attr.defaultValue;
         }
 
         const setValue = (newValue: TValue) => {
-            formContext.updateEntityValue(rowId, entityId, newValue);
+            formContext.updateEntityValue(entityId, newValue);
         };
 
         const validateValue = async () => {
-            await formContext.validateEntity(rowId, entityId);
+            await formContext.validateEntity(entityId);
         };
 
         const resetError = () => {
-            formContext.setEntityError(rowId, entityId, null);
+            formContext.setEntityError(entityId, null);
         };
 
         return (
-            <EntityProvider entityId={entityId} entityName={entity.name}>
-                <Component
+            <EntityContext.Provider value={{ entityId }}>
+                <options.component
                     attributes={attributesProp}
-                    value={(entityState.value as TValue) ?? entity.defaultValue}
+                    value={(entityState.value as TValue) ?? options.defaultValue}
                     setValue={setValue}
                     validateValue={validateValue}
                     error={entityState.error}
                     resetError={resetError}
                 />
-            </EntityProvider>
+            </EntityContext.Provider>
         );
+    }
+
+    ENTITY_REGISTRY[options.name] = {
+        definition: options,
+        wrapper: EntityWrapper
     };
+
+    return options;
 }

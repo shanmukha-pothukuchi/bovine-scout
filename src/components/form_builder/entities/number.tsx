@@ -1,12 +1,14 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createEntity, createEntityComponent } from "@/lib/form-builder";
+import { makeEntity } from "@/lib/form-builder";
 import { labelAttr } from "@/components/form_builder/attributes/label";
 import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
 import * as z from "zod";
+import { IconNumber } from "@tabler/icons-react";
 
-export const numberEntity = createEntity({
-    name: "number",
+export const numberEntity = makeEntity({
+    name: "Number",
+    icon: <IconNumber />,
     attributes: {
         label: labelAttr,
         placeholder: placeholderAttr,
@@ -16,11 +18,7 @@ export const numberEntity = createEntity({
         const schema = z.number();
         return schema.parse(value);
     },
-});
-
-export const NumberEntityComponent = createEntityComponent(
-    numberEntity,
-    ({ attributes, value, setValue, validateValue, error }) => {
+    component: ({ attributes, value, setValue, validateValue, error }) => {
         const { label, placeholder } = attributes;
 
         return (
@@ -33,7 +31,7 @@ export const NumberEntityComponent = createEntityComponent(
                     type="number"
                     value={value}
                     placeholder={placeholder}
-                    onChange={(e) => setValue(e.target.value)}
+                    onChange={(e) => setValue(parseInt(e.target.value))}
                     onBlur={validateValue}
                 />
 
@@ -45,4 +43,4 @@ export const NumberEntityComponent = createEntityComponent(
             </div>
         );
     }
-);
+});

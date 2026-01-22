@@ -1,20 +1,16 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createAttribute, createAttributeComponent } from "@/lib/form-builder";
+import { makeAttribute } from "@/lib/form-builder";
 import * as z from "zod";
 
-export const labelAttr = createAttribute({
+export const labelAttr = makeAttribute({
     name: "label",
     defaultValue: "",
     validate: (value: string) => {
         const schema = z.string().min(4).max(24);
         return schema.parse(value);
-    }
-});
-
-export const LabelAttrComponent = createAttributeComponent(
-    labelAttr,
-    ({ value, setValue, validateValue, error }) => {
+    },
+    component: ({ value, setValue, validateValue, error }) => {
         return (
             <div className="w-full max-w-sm space-y-2">
                 <Label htmlFor="label">
@@ -36,4 +32,4 @@ export const LabelAttrComponent = createAttributeComponent(
             </div>
         )
     }
-);
+});

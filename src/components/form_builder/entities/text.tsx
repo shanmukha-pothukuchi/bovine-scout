@@ -1,13 +1,15 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createEntity, createEntityComponent } from "@/lib/form-builder";
+import { makeEntity } from "@/lib/form-builder";
 import { labelAttr } from "@/components/form_builder/attributes/label";
 import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
 import { requiredAttr } from "@/components/form_builder/attributes/required";
 import * as z from "zod";
+import { IconTextCaption } from "@tabler/icons-react";
 
-export const textEntity = createEntity({
-    name: "text",
+export const textEntity = makeEntity({
+    name: "Text",
+    icon: <IconTextCaption />,
     attributes: {
         label: labelAttr,
         placeholder: placeholderAttr,
@@ -15,16 +17,11 @@ export const textEntity = createEntity({
     },
     defaultValue: "",
     validate: (value, { required }) => {
-        console.log(required);
         const base = z.string();
         const schema = required ? base.nonempty() : base;
         return schema.parse(value);
     },
-});
-
-export const TextEntityComponent = createEntityComponent(
-    textEntity,
-    ({ attributes, value, setValue, validateValue, error }) => {
+    component: ({ attributes, value, setValue, validateValue, error }) => {
         const { label, placeholder, required } = attributes;
 
         return (
@@ -51,4 +48,4 @@ export const TextEntityComponent = createEntityComponent(
             </div>
         );
     }
-);
+});
