@@ -7,40 +7,38 @@ import { z } from "zod";
 import { IconNumber } from "@tabler/icons-react";
 
 export const numberEntity = makeEntity({
-    name: "Number",
-    icon: <IconNumber />,
-    attributes: {
-        label: labelAttr,
-        placeholder: placeholderAttr,
-    },
-    defaultValue: 0,
-    validate: (value: number) => {
-        const schema = z.number();
-        return schema.parse(value);
-    },
-    component: ({ attributes, value, setValue, validateValue, error }) => {
-        const { label, placeholder } = attributes;
+  name: "Number",
+  icon: <IconNumber />,
+  attributes: {
+    label: labelAttr,
+    placeholder: placeholderAttr,
+  },
+  defaultValue: 0,
+  validate: (value: number) => {
+    const schema = z.number();
+    return schema.parse(value);
+  },
+  component: ({ attributes, value, setValue, validateValue, error }) => {
+    const { label, placeholder } = attributes;
 
-        return (
-            <div className="w-full space-y-2">
-                <Label>
-                    {label}
-                </Label>
+    return (
+      <div className="w-full space-y-2">
+        <Label>{label}</Label>
 
-                <Input
-                    type="number"
-                    value={value}
-                    placeholder={placeholder}
-                    onChange={(e) => setValue(parseInt(e.target.value))}
-                    onBlur={validateValue}
-                />
+        <Input
+          type="number"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => setValue(parseInt(e.target.value))}
+          onBlur={validateValue}
+        />
 
-                {error && (
-                    <div className="text-destructive text-sm">
-                        <span>{error}</span>
-                    </div>
-                )}
-            </div>
-        );
-    }
+        {error && (
+          <div className="text-destructive text-sm">
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+    );
+  },
 });

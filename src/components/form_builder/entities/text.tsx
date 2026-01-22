@@ -8,44 +8,44 @@ import { z } from "zod";
 import { IconTextCaption } from "@tabler/icons-react";
 
 export const textEntity = makeEntity({
-    name: "Text",
-    icon: <IconTextCaption />,
-    attributes: {
-        label: labelAttr,
-        placeholder: placeholderAttr,
-        required: requiredAttr,
-    },
-    defaultValue: "",
-    validate: (value, { required }) => {
-        const base = z.string();
-        const schema = required ? base.nonempty() : base;
-        return schema.parse(value);
-    },
-    component: ({ attributes, value, setValue, validateValue, error }) => {
-        const { label, placeholder, required } = attributes;
+  name: "Text",
+  icon: <IconTextCaption />,
+  attributes: {
+    label: labelAttr,
+    placeholder: placeholderAttr,
+    required: requiredAttr,
+  },
+  defaultValue: "",
+  validate: (value, { required }) => {
+    const base = z.string();
+    const schema = required ? base.nonempty() : base;
+    return schema.parse(value);
+  },
+  component: ({ attributes, value, setValue, validateValue, error }) => {
+    const { label, placeholder, required } = attributes;
 
-        return (
-            <div className="w-full space-y-2">
-                <Label>
-                    {label}
-                    {required && <span className="text-destructive">*</span>}
-                </Label>
+    return (
+      <div className="w-full space-y-2">
+        <Label>
+          {label}
+          {required && <span className="text-destructive">*</span>}
+        </Label>
 
-                <Input
-                    type="text"
-                    value={value}
-                    placeholder={placeholder}
-                    required={required}
-                    onChange={(e) => setValue(e.target.value)}
-                    onBlur={validateValue}
-                />
+        <Input
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          required={required}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={validateValue}
+        />
 
-                {error && (
-                    <div className="text-destructive text-sm">
-                        <span>{error}</span>
-                    </div>
-                )}
-            </div>
-        );
-    }
+        {error && (
+          <div className="text-destructive text-sm">
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+    );
+  },
 });

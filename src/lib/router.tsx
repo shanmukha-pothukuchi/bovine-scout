@@ -6,33 +6,33 @@ import ConfigLayout from "../pages/config/Layout";
 import MenuEditor from "../pages/config/MenuEditor";
 
 export interface ConfigRouteHandle {
-    title: string;
+  title: string;
 }
 
 export const router = createBrowserRouter([
-    {
-        path: "/config",
-        Component: ConfigLayout,
-        children: [
-            {
-                index: true,
-                element: <Navigate to="menu" replace />
-            },
-            {
-                path: "menu",
-                Component: MenuEditor,
-                handle: { title: "Menu Editor" } satisfies ConfigRouteHandle
-            },
-            {
-                path: "form",
-                Component: FormEditor,
-                handle: { title: "Form Editor" } satisfies ConfigRouteHandle
-            },
-            {
-                path: "analysis",
-                Component: Analysis,
-                handle: { title: "Analysis Editor" } satisfies ConfigRouteHandle
-            }
-        ]
-    },
+  {
+    path: "/config",
+    Component: ConfigLayout,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="menu" replace />,
+      },
+      {
+        path: "menu",
+        Component: MenuEditor,
+        handle: { title: "Menu Editor" } satisfies ConfigRouteHandle,
+      },
+      {
+        path: "form",
+        Component: FormEditor,
+        handle: { title: "Form Editor" } satisfies ConfigRouteHandle,
+      },
+      {
+        path: "analysis",
+        Component: Analysis,
+        handle: { title: "Analysis Editor" } satisfies ConfigRouteHandle,
+      },
+    ],
+  },
 ]);
