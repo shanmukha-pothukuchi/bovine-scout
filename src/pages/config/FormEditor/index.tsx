@@ -1,6 +1,7 @@
 import { numberEntity } from "@/components/form_builder/entities/number";
 import { sliderEntity } from "@/components/form_builder/entities/slider";
 import { textEntity } from "@/components/form_builder/entities/text";
+import { useConfig } from "../context";
 
 import { FormProvider, useFormContext } from "@/lib/form-builder";
 import {
@@ -19,7 +20,7 @@ import { type ReactNode, useState } from "react";
 import { Entity, type EntityStructure, EntitySwatch } from "./Entity";
 import { Row, type RowStructure } from "./Row";
 
-interface FormStructure {
+export interface FormStructure {
   id: string;
   rows: RowStructure[];
 }
@@ -97,10 +98,7 @@ function FormEditor({ form }: { form: FormStructure }) {
 }
 
 function FormEditorContainer() {
-  const [formStructure, setFormStructure] = useState<FormStructure>({
-    id: "form",
-    rows: [],
-  });
+  const { formStructure, setFormStructure } = useConfig();
   const { entityRegistry, registerEntity, deregisterEntity } = useFormContext();
 
   const sensors = useSensors(

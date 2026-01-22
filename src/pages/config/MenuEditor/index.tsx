@@ -25,30 +25,24 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@tabler/icons-react";
+import { useConfig } from "../context";
 
 export default function MenuEditor() {
-  const [menuTree, setMenuTree] = useState<MenuItem[]>([
-    { id: "defense", label: "Defense" },
-    { id: "utility", label: "Utility" },
-    {
-      id: "offense",
-      label: "Offense",
-      children: [
-        {
-          id: "magic",
-          label: "Magic",
-          children: [
-            { id: "fire", label: "Fire" },
-            { id: "ice", label: "Ice" },
-            { id: "lightning", label: "Lightning" },
-          ],
-        },
-        { id: "melee", label: "Melee" },
-        { id: "ranged", label: "Ranged" },
-      ],
-    },
-    { id: "support", label: "Support" },
-  ]);
+  const { menuTrees, setMenuTrees, gamePeriods } = useConfig();
+  const [gamePeriod, setGamePeriod] = useState<string>(gamePeriods[0]);
+
+  const menuTree = menuTrees[gamePeriod] || [];
+
+  const setMenuTree: React.Dispatch<React.SetStateAction<MenuItem[]>> = (
+    action,
+  ) => {
+    setMenuTrees((prev) => {
+      const currentTree = prev[gamePeriod] || [];
+      const newTree =
+        typeof action === "function" ? action(currentTree) : action;
+      return { ...prev, [gamePeriod]: newTree };
+    });
+  };
 
   const [editItem, setEditItem] = useState<MenuItem["id"] | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem["id"] | null>(null);
@@ -199,14 +193,6 @@ export default function MenuEditor() {
     });
   };
 
-  const [gamePeriod, setGamePeriod] = useState<string | null>("auto");
-
-  const calculationContexts = new Map([
-    ["auto", "Auto"],
-    ["tele_op", "Tele-Op"],
-    ["end_game", "End Game"],
-  ]);
-
   return (
     <div className="h-full flex">
       <DndContext
@@ -217,22 +203,20 @@ export default function MenuEditor() {
       >
         <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto">
           <div className="mb-2 flex items-center justify-between">
-            <Select value={gamePeriod} onValueChange={setGamePeriod}>
+            <Select
+              value={gamePeriod}
+              onValueChange={(val) => val && setGamePeriod(val)}
+            >
               <SelectTrigger>
-                <SelectValue>
-                  {calculationContexts.get(gamePeriod ?? "") ??
-                    "Select game period"}
-                </SelectValue>
+                <SelectValue>{gamePeriod}</SelectValue>
               </SelectTrigger>
 
               <SelectContent align="start">
-                {Array.from(calculationContexts.entries()).map(
-                  ([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ),
-                )}
+                {gamePeriods.map((period) => (
+                  <SelectItem key={period} value={period}>
+                    {period}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -284,11 +268,11 @@ export default function MenuEditor() {
                   editMode={false}
                   hideActions
                   selected
-                  onEdit={() => { }}
-                  onAdd={() => { }}
-                  onDelete={() => { }}
-                  onSelect={() => { }}
-                  onCommit={() => { }}
+                  onEdit={() => {}}
+                  onAdd={() => {}}
+                  onDelete={() => {}}
+                  onSelect={() => {}}
+                  onCommit={() => {}}
                 />
               </div>
             )}
