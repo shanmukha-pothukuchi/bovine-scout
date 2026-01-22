@@ -8,7 +8,7 @@ export const requiredAttr = makeAttribute({
     validate: (value: boolean) => value,
     component: ({ value, setValue }) => {
         return (
-            <div className="w-full max-w-sm flex items-center justify-between">
+            <div className="w-full flex flex-col gap-2">
                 <Label htmlFor="required">
                     Required
                 </Label>

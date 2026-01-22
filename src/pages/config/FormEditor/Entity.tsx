@@ -3,15 +3,14 @@ import { useFormContext } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
-export interface EntityStructure { id: string; name: string; }
+export interface EntityStructure { id: string; }
 
 export function Entity({ rowId, entity, selected, setSelected }: { rowId: string; entity: EntityStructure; selected: boolean; setSelected: () => void }) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: "entity" + entity.id,
         data: {
             rowId,
-            entityId: entity.id,
-            name: entity.name,
+            entityId: entity.id
         },
     });
 
@@ -45,8 +44,12 @@ export function Entity({ rowId, entity, selected, setSelected }: { rowId: string
         },
     });
 
-    const { entityRegistry } = useFormContext();
-    const Component = entityRegistry.current[entity.name]?.wrapper;
+    const { entityRegistry, getEntityState } = useFormContext();
+
+    const entityState = getEntityState(entity.id);
+    if (!entityState) return null;
+
+    const Component = entityRegistry.current[entityState.name]?.wrapper;
 
     return (
         <div

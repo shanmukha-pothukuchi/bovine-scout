@@ -3,7 +3,6 @@ import { sliderEntity } from "@/components/form_builder/entities/slider";
 import { textEntity } from "@/components/form_builder/entities/text";
 
 import {
-    type AttributeRegistryEntry,
     FormProvider,
     useFormContext
 } from "@/lib/form-builder";
@@ -32,7 +31,7 @@ const availableEntities = [
 ];
 
 function FormEditor({ form }: { form: FormStructure }) {
-    const { state, entityRegistry } = useFormContext();
+    const { state, getEntityState, attributeRegistry } = useFormContext();
 
     const { setNodeRef } = useDroppable({
         id: "form",
@@ -62,13 +61,11 @@ function FormEditor({ form }: { form: FormStructure }) {
 
                             if (!entityStruct) return null;
 
-                            const entityEntry = entityRegistry.current[entityStruct.name];
+                            const entityEntry = getEntityState(entityStruct.id);
                             if (!entityEntry) return null;
 
-                            return (Object.values<AttributeRegistryEntry<any, any>>(entityEntry.definition.attributes)).map((attrEntry) => {
-                                const Component = attrEntry.wrapper;
-                                const attrName = attrEntry.definition.name;
-
+                            return (Object.entries(entityEntry.attributes)).map(([attrName, attrState]) => {
+                                const Component = attributeRegistry.current[attrState.name].wrapper;
                                 return <Component key={attrName} entityId={selected} />;
                             });
                         })()}
@@ -96,7 +93,7 @@ function FormEditorContainer() {
         id: "form",
         rows: [],
     });
-    const { deregisterEntity } = useFormContext();
+    const { entityRegistry, registerEntity, deregisterEntity } = useFormContext();
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -119,9 +116,8 @@ function FormEditorContainer() {
     };
 
     const handleDragEnd = ({ active, over }: DragEndEvent) => {
-        const createNewEntity = (name: string): EntityStructure => ({
+        const createNewEntity = (): EntityStructure => ({
             id: nanoid(),
-            name,
         });
 
         const createNewRow = (entities: EntityStructure[] = []): RowStructure => ({
@@ -153,7 +149,8 @@ function FormEditorContainer() {
         let entityToInsert: EntityStructure | null = null;
 
         if (activeId.startsWith("swatch") && activeEntitySwatch) {
-            entityToInsert = createNewEntity(activeEntitySwatch.name);
+            entityToInsert = createNewEntity();
+            registerEntity(entityToInsert.id, entityRegistry.current[activeEntitySwatch.name].definition);
         } else if (activeId.startsWith("entity")) {
             const { entityId } = active.data.current as { entityId: string };
             const removed = removeEntity(newRows, entityId);
@@ -252,7 +249,7 @@ function FormEditorContainer() {
                 <DragOverlay>
                     <Entity
                         rowId={activeEntity.rowId}
-                        entity={{ id: activeEntity.entityId, name: activeEntity.name }}
+                        entity={{ id: activeEntity.entityId }}
                         selected={false}
                         setSelected={() => { }}
                     />
