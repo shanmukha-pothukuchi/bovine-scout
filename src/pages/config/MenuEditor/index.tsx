@@ -53,6 +53,19 @@ export default function MenuEditor() {
   const [editItem, setEditItem] = useState<MenuItem["id"] | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem["id"] | null>(null);
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedNodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -170,6 +183,7 @@ export default function MenuEditor() {
       if (zone === "inside") {
         parentId = targetId;
         index = getItemById(targetId, cleanedTree)?.children?.length ?? 0;
+        setExpandedNodes((prev) => new Set(prev).add(targetId));
       } else {
         const parent = getParentByChildId(targetId, cleanedTree);
         parentId = parent ? parent.id : null;
@@ -243,7 +257,7 @@ export default function MenuEditor() {
             selectedItem={selectedItem}
             setSelectedItem={setSelectedItem}
             setText={setMenuTreeProperty}
-            addChild={(id) =>
+            addChild={(id) => {
               setMenuTree((prev) =>
                 insertNode(
                   prev,
@@ -251,9 +265,12 @@ export default function MenuEditor() {
                   getItemById(id, prev)?.children?.length ?? 0,
                   { id: nanoid(), label: "New Item" },
                 ),
-              )
-            }
+              );
+              setExpandedNodes((prev) => new Set(prev).add(id));
+            }}
             removeChild={(id) => setMenuTree((prev) => removeNode(id, prev))}
+            expandedNodes={expandedNodes}
+            onToggleExpand={toggleExpand}
           />
         </div>
 
@@ -267,11 +284,11 @@ export default function MenuEditor() {
                   editMode={false}
                   hideActions
                   selected
-                  onEdit={() => {}}
-                  onAdd={() => {}}
-                  onDelete={() => {}}
-                  onSelect={() => {}}
-                  onCommit={() => {}}
+                  onEdit={() => { }}
+                  onAdd={() => { }}
+                  onDelete={() => { }}
+                  onSelect={() => { }}
+                  onCommit={() => { }}
                 />
               </div>
             )}

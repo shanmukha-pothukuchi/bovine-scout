@@ -9,6 +9,7 @@ import {
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { MenuItem } from "@/components/RadialMenu";
+import { cn } from "@/lib/utils";
 
 interface NodeProps {
   item: MenuItem;
@@ -21,6 +22,8 @@ interface NodeProps {
   selected: boolean;
   onSelect: () => void;
   onCommit: (value: string | null) => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export function Node({
@@ -34,6 +37,8 @@ export function Node({
   selected,
   onSelect,
   onCommit,
+  isExpanded,
+  onToggleExpand,
 }: NodeProps) {
   const [tempText, setTempText] = useState(item.label);
 
@@ -60,8 +65,20 @@ export function Node({
     >
       <span style={{ width: indent * 10 }} />
       <div className="flex gap-1.5 items-center w-full">
-        <span className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent">
-          <IconChevronRight className="opacity-50 w-4" />
+        <span
+          className={cn("flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5", {
+            "hover:bg-accent": item.children && item.children.length > 0,
+          })}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand?.();
+          }}
+        >
+          {item.children && item.children.length > 0 && (
+            <IconChevronRight
+              className={`opacity-50 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+            />
+          )}
         </span>
 
         {editMode ? (

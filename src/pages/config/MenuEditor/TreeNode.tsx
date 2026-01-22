@@ -14,6 +14,8 @@ interface TreeNodeProps {
   setText: (id: MenuItem["id"], value: string) => void;
   addChild: (id: MenuItem["id"]) => void;
   removeChild: (id: MenuItem["id"]) => void;
+  expandedNodes: Set<string>;
+  onToggleExpand: (id: string) => void;
 }
 
 function TreeItem({
@@ -35,7 +37,7 @@ function TreeItem({
 
   return (
     <div
-      className={`flex flex-col gap-1 relative rounded transition-colors duration-200 ${isOverInside ? "bg-muted outline outline-1 outline-ring" : ""}`}
+      className={`flex flex-col gap-1 relative rounded transition-colors duration-200 ${isOverInside ? "bg-muted outline-1 outline-ring" : ""}`}
     >
       {index === 0 && (
         <div
@@ -58,23 +60,29 @@ function TreeItem({
             if (value !== null) props.setText(item.id, value);
             props.setEditItem(null);
           }}
+          isExpanded={props.expandedNodes.has(item.id)}
+          onToggleExpand={() => props.onToggleExpand(item.id)}
         />
       </div>
 
-      {item.children && item.children.length > 0 && (
-        <TreeNode
-          tree={item.children}
-          isTopLevel={false}
-          indent={(props.indent || 0) + 1}
-          editItem={props.editItem}
-          setEditItem={props.setEditItem}
-          selectedItem={props.selectedItem}
-          setSelectedItem={props.setSelectedItem}
-          setText={props.setText}
-          addChild={props.addChild}
-          removeChild={props.removeChild}
-        />
-      )}
+      {item.children &&
+        item.children.length > 0 &&
+        props.expandedNodes.has(item.id) && (
+          <TreeNode
+            tree={item.children}
+            isTopLevel={false}
+            indent={(props.indent || 0) + 1}
+            editItem={props.editItem}
+            setEditItem={props.setEditItem}
+            selectedItem={props.selectedItem}
+            setSelectedItem={props.setSelectedItem}
+            setText={props.setText}
+            addChild={props.addChild}
+            removeChild={props.removeChild}
+            expandedNodes={props.expandedNodes}
+            onToggleExpand={props.onToggleExpand}
+          />
+        )}
 
       {(index < tree.length - 1 || isTopLevel) && (
         <div
