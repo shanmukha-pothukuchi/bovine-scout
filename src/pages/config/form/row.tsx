@@ -1,5 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-import { Entity, type EntityStructure } from "./Entity";
+import { Entity, type EntityStructure } from "./entity";
 
 export interface RowStructure {
   id: string;

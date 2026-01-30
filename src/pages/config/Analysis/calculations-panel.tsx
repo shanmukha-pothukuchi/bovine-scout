@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { Cell } from "./Cell";
+import { Cell } from "./cell";
 
 export function CalculationsPanel() {
   const [calculationContext, setCalculationContext] = useState<string | null>(

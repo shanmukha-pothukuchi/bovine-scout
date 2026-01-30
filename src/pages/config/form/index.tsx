@@ -1,6 +1,6 @@
-import { numberEntity } from "@/components/form_builder/entities/number";
-import { sliderEntity } from "@/components/form_builder/entities/slider";
-import { textEntity } from "@/components/form_builder/entities/text";
+import { numberEntity } from "@/components/form-builder/entities/number";
+import { sliderEntity } from "@/components/form-builder/entities/slider";
+import { textEntity } from "@/components/form-builder/entities/text";
 import { useConfig } from "../context";
 
 import { FormProvider, useFormContext } from "@/lib/form-builder";
@@ -17,8 +17,8 @@ import {
 } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { type ReactNode, useState } from "react";
-import { Entity, type EntityStructure, EntitySwatch } from "./Entity";
-import { Row, type RowStructure } from "./Row";
+import { Entity, type EntityStructure, EntitySwatch } from "./entity";
+import { Row, type RowStructure } from "./row";
 
 export interface FormStructure {
   id: string;

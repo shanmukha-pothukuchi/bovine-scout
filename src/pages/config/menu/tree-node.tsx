@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
-import type { MenuItem } from "@/components/RadialMenu";
+import type { MenuItem } from "@/components/radial-menu";
 
-import { Node } from "./Node";
+import { Node } from "./node";
 
 interface TreeNodeProps {
   tree: MenuItem[];

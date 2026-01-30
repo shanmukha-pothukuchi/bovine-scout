@@ -12,10 +12,10 @@ import {
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import RadialMenu, { type MenuItem } from "@/components/RadialMenu";
+import RadialMenu, { type MenuItem } from "@/components/radial-menu";
 
-import { Node } from "./Node";
-import { TreeNode } from "./TreeNode";
+import { Node } from "./node";
+import { TreeNode } from "./tree-node";
 import {
   Select,
   SelectContent,
@@ -268,11 +268,11 @@ export default function MenuEditor() {
                   editMode={false}
                   hideActions
                   selected
-                  onEdit={() => {}}
-                  onAdd={() => {}}
-                  onDelete={() => {}}
-                  onSelect={() => {}}
-                  onCommit={() => {}}
+                  onEdit={() => { }}
+                  onAdd={() => { }}
+                  onDelete={() => { }}
+                  onSelect={() => { }}
+                  onCommit={() => { }}
                 />
               </div>
             )}

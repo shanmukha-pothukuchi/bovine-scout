@@ -1,10 +1,10 @@
+import { labelAttr } from "@/components/form-builder/attributes/label";
+import { placeholderAttr } from "@/components/form-builder/attributes/placeholder";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { makeEntity } from "@/lib/form-builder";
-import { labelAttr } from "@/components/form_builder/attributes/label";
-import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
-import { z } from "zod";
 import { IconNumber } from "@tabler/icons-react";
+import { z } from "zod";
 
 export const numberEntity = makeEntity({
   name: "Number",

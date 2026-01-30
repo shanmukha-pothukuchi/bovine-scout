@@ -1,11 +1,11 @@
-import type { MenuItem } from "@/components/RadialMenu";
+import type { MenuItem } from "@/components/radial-menu";
 import React, {
   createContext,
   useContext,
   useState,
   type ReactNode,
 } from "react";
-import type { FormStructure } from "./FormEditor";
+import type { FormStructure } from "./form";
 
 interface ConfigContextType {
   menuTrees: Record<string, MenuItem[]>;

@@ -203,7 +203,7 @@ export function Cell({
       </div>
       <div className="relative grid w-full">
         <pre
-          className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap break-words overflow-hidden border-none outline-none resize-none font-mono z-10 text-foreground pointer-events-none"
+          className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap wrap-break-word overflow-hidden border-none outline-none resize-none font-mono z-10 text-foreground pointer-events-none"
           ref={highlightLayerRef}
         >
           {textHighlights.map((highlight, i) => {
@@ -239,7 +239,7 @@ export function Cell({
           {value.endsWith("\n") && <br />}
         </pre>
         <textarea
-          className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap break-words overflow-hidden border-none outline-none resize-none font-mono z-20 text-transparent caret-white"
+          className="bg-transparent col-start-1 row-start-1 w-full m-0 p-2.5 box-border leading-normal whitespace-pre-wrap wrap-break-word overflow-hidden border-none outline-none resize-none font-mono z-20 text-transparent caret-white"
           ref={inputLayerRef}
           spellCheck="false"
           value={value}

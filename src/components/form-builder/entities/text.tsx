@@ -1,9 +1,9 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { makeEntity } from "@/lib/form-builder";
-import { labelAttr } from "@/components/form_builder/attributes/label";
-import { placeholderAttr } from "@/components/form_builder/attributes/placeholder";
-import { requiredAttr } from "@/components/form_builder/attributes/required";
+import { labelAttr } from "@/components/form-builder/attributes/label";
+import { placeholderAttr } from "@/components/form-builder/attributes/placeholder";
+import { requiredAttr } from "@/components/form-builder/attributes/required";
 import { z } from "zod";
 import { IconTextCaption } from "@tabler/icons-react";
 

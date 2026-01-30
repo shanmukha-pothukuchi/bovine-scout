@@ -8,7 +8,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import type { MenuItem } from "@/components/RadialMenu";
+import type { MenuItem } from "@/components/radial-menu";
 import { cn } from "@/lib/utils";
 
 interface NodeProps {
