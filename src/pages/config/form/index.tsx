@@ -78,7 +78,7 @@ function FormEditor({
           <div className="text-sm font-medium text-muted-foreground">
             Canvas
           </div>
-          <Button size="sm" variant="outline" onClick={onPreviewToggle}>
+          <Button variant="outline" onClick={onPreviewToggle}>
             {isPreview ? "Exit Preview" : "Preview"}
           </Button>
         </div>

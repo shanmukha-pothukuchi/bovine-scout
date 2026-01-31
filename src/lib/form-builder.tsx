@@ -34,13 +34,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 // Types
-export type InferAttributeValue<A> =
-  A extends Attribute<any, infer V> ? V : never;
-
 export type AttributeValues<
   T extends Record<string, AttributeRegistryEntry<any, any>>,
 > = {
-  [K in keyof T]: InferAttributeValue<T[K]["definition"]>;
+  [K in keyof T]: T[K]["definition"]["defaultValue"];
 };
 
 export interface Attribute<TName extends string, TValue> {
@@ -129,12 +126,12 @@ interface FormContextValue {
   deregisterEntity: (entityId: string) => void;
 
   // Entity Methods
-  updateEntityValue: (entityId: string, value: unknown) => void;
+  setEntityValue: (entityId: string, value: unknown) => void;
   setEntityError: (entityId: string, error: string | null) => void;
   validateEntity: (entityId: string) => Promise<void>;
 
   // Attribute Methods
-  updateAttributeValue: (
+  setAttributeValue: (
     entityId: string,
     attributeName: string,
     value: unknown,
@@ -256,7 +253,7 @@ export function FormProvider({
     });
   }, []);
 
-  const updateEntityValue = useCallback((entityId: string, value: unknown) => {
+  const setEntityValue = useCallback((entityId: string, value: unknown) => {
     setState((prev) => ({
       ...prev,
       [entityId]: {
@@ -313,7 +310,7 @@ export function FormProvider({
     [setEntityError],
   );
 
-  const updateAttributeValue = useCallback(
+  const setAttributeValue = useCallback(
     (entityId: string, attributeName: string, value: unknown) => {
       setState((prev) => ({
         ...prev,
@@ -388,10 +385,10 @@ export function FormProvider({
       attributeRegistry,
       registerEntity,
       deregisterEntity,
-      updateEntityValue,
+      setEntityValue,
       setEntityError,
       validateEntity,
-      updateAttributeValue,
+      setAttributeValue,
       setAttributeError,
       validateAttribute,
       getEntityState,
@@ -400,10 +397,10 @@ export function FormProvider({
       state,
       registerEntity,
       deregisterEntity,
-      updateEntityValue,
+      setEntityValue,
       setEntityError,
       validateEntity,
-      updateAttributeValue,
+      setAttributeValue,
       setAttributeError,
       validateAttribute,
       getEntityState,
@@ -432,7 +429,7 @@ export function makeAttribute<const TName extends string, TValue>(
     const setValue = useCallback(
       (value: TValue) => {
         if (entityId) {
-          formContext.updateAttributeValue(entityId, options.name, value);
+          formContext.setAttributeValue(entityId, options.name, value);
         }
       },
       [formContext, entityId],
@@ -517,7 +514,7 @@ export function makeEntity<
     }
 
     const setValue = (newValue: TValue) => {
-      formContext.updateEntityValue(entityId, newValue);
+      formContext.setEntityValue(entityId, newValue);
     };
 
     const validateValue = async () => {
