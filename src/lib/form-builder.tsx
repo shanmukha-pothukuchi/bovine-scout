@@ -74,6 +74,7 @@ export interface AttributeComponentProps<TValue = unknown> {
   validateValue: () => Promise<void>;
   error: string | null;
   resetError: () => void;
+  disabled?: boolean;
 }
 
 export interface EntityComponentProps<
@@ -86,6 +87,7 @@ export interface EntityComponentProps<
   validateValue: () => Promise<void>;
   error: string | null;
   resetError: () => void;
+  disabled?: boolean;
 }
 
 // State Definitions
@@ -480,6 +482,7 @@ export function makeAttribute<const TName extends string, TValue>(
 interface EntityWrapperProps {
   entityId: string;
   defaultEntityState?: EntityStateData;
+  disabled?: boolean;
 }
 
 export function makeEntity<
@@ -489,7 +492,11 @@ export function makeEntity<
 >(
   options: Entity<TName, TAttributes, TValue>,
 ): EntityRegistryEntry<TName, TAttributes, TValue> {
-  function EntityWrapper({ entityId, defaultEntityState }: EntityWrapperProps) {
+  function EntityWrapper({
+    entityId,
+    defaultEntityState,
+    disabled,
+  }: EntityWrapperProps) {
     const formContext = useFormContext();
 
     useEffect(() => {
@@ -530,6 +537,7 @@ export function makeEntity<
           validateValue={validateValue}
           error={entityState.error}
           resetError={resetError}
+          disabled={disabled}
         />
       </EntityContext.Provider>
     );

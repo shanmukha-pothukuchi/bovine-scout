@@ -18,7 +18,14 @@ export const numberEntity = makeEntity({
     const schema = z.number();
     return schema.parse(value);
   },
-  component: ({ attributes, value, setValue, validateValue, error }) => {
+  component: ({
+    attributes,
+    value,
+    setValue,
+    validateValue,
+    error,
+    disabled,
+  }) => {
     const { label, placeholder } = attributes;
 
     return (
@@ -29,6 +36,7 @@ export const numberEntity = makeEntity({
           type="number"
           value={value}
           placeholder={placeholder}
+          disabled={disabled}
           onChange={(e) => setValue(parseInt(e.target.value))}
           onBlur={validateValue}
         />

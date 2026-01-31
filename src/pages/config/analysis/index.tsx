@@ -21,7 +21,7 @@ export default function Analysis() {
 
   return (
     <div className="h-full flex">
-      <div className="w-125 h-full bg-sidebar border-r border-border flex flex-col">
+      <div className="w-100 h-full bg-sidebar border-r border-border flex flex-col">
         <div className="p-2 bg-secondary border-border">
           <Select
             value={calculationContext}
@@ -47,6 +47,8 @@ export default function Analysis() {
           <CalculationsPanel />
         </div>
       </div>
+      <div className="flex-1"></div>
+      <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border"></div>
     </div>
   );
 }

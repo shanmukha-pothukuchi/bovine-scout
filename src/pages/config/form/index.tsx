@@ -3,6 +3,7 @@ import { sliderEntity } from "@/components/form-builder/entities/slider";
 import { textEntity } from "@/components/form-builder/entities/text";
 import { useConfig } from "../context";
 
+import { Button } from "@/components/ui/button";
 import { FormProvider, useFormContext } from "@/lib/form-builder";
 import {
   DndContext,
@@ -15,8 +16,9 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useMemo } from "react";
 import { Entity, type EntityStructure, EntitySwatch } from "./entity";
 import { Row, type RowStructure } from "./row";
 
@@ -25,41 +27,89 @@ export interface FormStructure {
   rows: RowStructure[];
 }
 
-const availableEntities = [textEntity, numberEntity, sliderEntity];
+const entityCategories = [
+  {
+    name: "Input",
+    entities: [textEntity, numberEntity],
+  },
+  {
+    name: "Control",
+    entities: [sliderEntity],
+  },
+];
 
-function FormEditor({ form }: { form: FormStructure }) {
+const availableEntities = entityCategories
+  .map((category) => category.entities)
+  .flat();
+
+function FormEditor({
+  form,
+  isPreview,
+  onPreviewToggle,
+}: {
+  form: FormStructure;
+  isPreview: boolean;
+  onPreviewToggle: () => void;
+}) {
   const { state, getEntityState, attributeRegistry } = useFormContext();
+
+  const isDragDisabled = useMemo(() => isPreview, [isPreview]);
 
   const { setNodeRef } = useDroppable({
     id: "form",
+    disabled: isDragDisabled,
   });
 
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <div className="h-full flex">
-      <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-r border-border">
+      <div className="w-72 h-full bg-sidebar overflow-y-auto border-r border-border">
         <pre>{JSON.stringify(state, null, 1)}</pre>
         <hr />
         <pre>{JSON.stringify(form, null, 2)}</pre>
       </div>
       <div
-        className="flex flex-col flex-1 gap-2 p-2"
+        className="flex flex-col flex-1"
         ref={setNodeRef}
-        onClick={() => setSelected(null)}
+        onClick={() => !isPreview && setSelected(null)}
       >
-        {form.rows.map((row) => (
-          <Row
-            key={row.id}
-            row={row}
-            selected={selected}
-            setSelected={setSelected}
-          />
-        ))}
+        <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+          <div className="text-sm font-medium text-muted-foreground">
+            Canvas
+          </div>
+          <Button size="sm" variant="outline" onClick={onPreviewToggle}>
+            {isPreview ? "Exit Preview" : "Preview"}
+          </Button>
+        </div>
+        <div className="flex flex-col gap-2 p-2">
+          {form.rows.map((row) => (
+            <Row
+              key={row.id}
+              row={row}
+              selected={isPreview ? null : selected}
+              setSelected={isPreview ? () => {} : setSelected}
+              inputDisabled={!isPreview}
+              dragDisabled={isDragDisabled}
+            />
+          ))}
+        </div>
       </div>
       <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border">
         {selected ? (
           <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelected(null)}
+              >
+                <IconChevronLeft className="opacity-50" />
+              </Button>
+              <div className="text-sm font-medium text-muted-foreground">
+                Properties
+              </div>
+            </div>
             {(() => {
               const entityStruct = form.rows
                 .flatMap((row) => row.entities)
@@ -80,16 +130,24 @@ function FormEditor({ form }: { form: FormStructure }) {
             })()}
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-3 gap-2">
-              {availableEntities.map((entry) => (
-                <EntitySwatch
-                  key={entry.definition.name}
-                  name={entry.definition.name}
-                  icon={entry.definition.icon}
-                />
-              ))}
-            </div>
+          <div className="flex flex-col gap-4">
+            {entityCategories.map((category) => (
+              <div key={category.name} className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {category.name}
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {category.entities.map((entry) => (
+                    <EntitySwatch
+                      key={entry.definition.name}
+                      name={entry.definition.name}
+                      icon={entry.definition.icon}
+                      disabled={isDragDisabled}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -100,6 +158,8 @@ function FormEditor({ form }: { form: FormStructure }) {
 function FormEditorContainer() {
   const { formStructure, setFormStructure } = useConfig();
   const { entityRegistry, registerEntity, deregisterEntity } = useFormContext();
+
+  const [isPreview, setIsPreview] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -116,6 +176,8 @@ function FormEditorContainer() {
   } | null>(null);
 
   const handleDragStart = ({ active }: DragStartEvent) => {
+    if (isPreview) return;
+
     setActiveEntitySwatch(null);
     setActiveEntity(null);
 
@@ -278,8 +340,12 @@ function FormEditorContainer() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <FormEditor form={formStructure} />
-      {activeEntitySwatch && (
+      <FormEditor
+        form={formStructure}
+        isPreview={isPreview}
+        onPreviewToggle={() => setIsPreview(!isPreview)}
+      />
+      {activeEntitySwatch && !isPreview && (
         <DragOverlay>
           <EntitySwatch
             name={activeEntitySwatch.name}
@@ -287,7 +353,7 @@ function FormEditorContainer() {
           />
         </DragOverlay>
       )}
-      {activeEntity && (
+      {activeEntity && !isPreview && (
         <DragOverlay>
           <Entity
             rowId={activeEntity.rowId}

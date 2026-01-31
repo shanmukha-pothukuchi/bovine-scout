@@ -10,16 +10,21 @@ export function Row({
   row,
   selected,
   setSelected,
+  inputDisabled = false,
+  dragDisabled = false,
 }: {
   row: RowStructure;
   selected: string | null;
   setSelected: (entityId: string | null) => void;
+  inputDisabled?: boolean;
+  dragDisabled?: boolean;
 }) {
   const { setNodeRef } = useDroppable({
     id: "row" + row.id,
     data: {
       rowId: row.id,
     },
+    disabled: dragDisabled,
   });
 
   return (
@@ -31,6 +36,8 @@ export function Row({
           entity={entity}
           selected={selected === entity.id}
           setSelected={() => setSelected(entity.id)}
+          inputDisabled={inputDisabled}
+          dragDisabled={dragDisabled}
         />
       ))}
     </div>

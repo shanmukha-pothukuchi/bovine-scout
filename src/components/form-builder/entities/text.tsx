@@ -21,7 +21,14 @@ export const textEntity = makeEntity({
     const schema = required ? base.nonempty() : base;
     return schema.parse(value);
   },
-  component: ({ attributes, value, setValue, validateValue, error }) => {
+  component: ({
+    attributes,
+    value,
+    setValue,
+    validateValue,
+    error,
+    disabled,
+  }) => {
     const { label, placeholder, required } = attributes;
 
     return (
@@ -36,6 +43,7 @@ export const textEntity = makeEntity({
           value={value}
           placeholder={placeholder}
           required={required}
+          disabled={disabled}
           onChange={(e) => setValue(e.target.value)}
           onBlur={validateValue}
         />

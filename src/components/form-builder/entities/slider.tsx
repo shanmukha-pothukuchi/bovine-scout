@@ -94,7 +94,7 @@ export const sliderEntity = makeEntity({
     const schema = z.number();
     return schema.parse(value);
   },
-  component: ({ attributes, value, setValue }) => {
+  component: ({ attributes, value, setValue, disabled }) => {
     const { label, min, max, defaultValue } = attributes;
 
     useEffect(() => {
@@ -106,10 +106,11 @@ export const sliderEntity = makeEntity({
         <Label>{label}</Label>
 
         <Slider
-          value={[value]}
-          onValueChange={(value) => setValue((value as number[])[0])}
+          value={[value ?? defaultValue ?? 0]}
+          onValueChange={(val) => setValue(val as number)}
           min={min}
           max={max}
+          disabled={disabled}
         />
       </div>
     );

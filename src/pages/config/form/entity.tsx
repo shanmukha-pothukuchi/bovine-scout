@@ -12,11 +12,15 @@ export function Entity({
   entity,
   selected,
   setSelected,
+  inputDisabled = false,
+  dragDisabled = false,
 }: {
   rowId: string;
   entity: EntityStructure;
   selected: boolean;
   setSelected: () => void;
+  inputDisabled?: boolean;
+  dragDisabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: "entity" + entity.id,
@@ -24,6 +28,7 @@ export function Entity({
       rowId,
       entityId: entity.id,
     },
+    disabled: dragDisabled,
   });
 
   const { setNodeRef: setRightNodeRef } = useDroppable({
@@ -32,6 +37,7 @@ export function Entity({
       entityId: entity.id,
       rowId,
     },
+    disabled: dragDisabled,
   });
 
   const { setNodeRef: setLeftNodeRef } = useDroppable({
@@ -40,6 +46,7 @@ export function Entity({
       entityId: entity.id,
       rowId,
     },
+    disabled: dragDisabled,
   });
 
   const { setNodeRef: setTopNodeRef } = useDroppable({
@@ -47,6 +54,7 @@ export function Entity({
     data: {
       rowId,
     },
+    disabled: dragDisabled,
   });
 
   const { setNodeRef: setBottomNodeRef } = useDroppable({
@@ -54,6 +62,7 @@ export function Entity({
     data: {
       rowId,
     },
+    disabled: dragDisabled,
   });
 
   const { entityRegistry, getEntityState } = useFormContext();
@@ -66,36 +75,40 @@ export function Entity({
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
+      {...(!dragDisabled ? attributes : {})}
+      {...(!dragDisabled ? listeners : {})}
       className={cn(
         "relative border-border border w-full border-r-0 last:border-r first:rounded-l-md last:rounded-r-md p-2",
         selected && "outline outline-blue-500 bg-blue-500/15",
-        isDragging && "opacity-50",
+        isDragging && !dragDisabled && "opacity-50",
       )}
       onClick={(e) => {
         e.stopPropagation();
         setSelected();
       }}
     >
-      <div
-        ref={setTopNodeRef}
-        className="z-10 absolute top-0 left-0 h-1/4 w-full"
-      ></div>
-      <div
-        ref={setBottomNodeRef}
-        className="z-10 absolute bottom-0 left-0 h-1/4 w-full"
-      ></div>
-      <div
-        ref={setLeftNodeRef}
-        className="z-10 absolute left-0 top-0 w-1/5 h-full"
-      ></div>
-      <div
-        ref={setRightNodeRef}
-        className="z-10 absolute right-0 top-0 w-1/5 h-full"
-      ></div>
+      {!dragDisabled && (
+        <>
+          <div
+            ref={setTopNodeRef}
+            className="z-10 absolute top-0 left-0 h-1/4 w-full"
+          ></div>
+          <div
+            ref={setBottomNodeRef}
+            className="z-10 absolute bottom-0 left-0 h-1/4 w-full"
+          ></div>
+          <div
+            ref={setLeftNodeRef}
+            className="z-10 absolute left-0 top-0 w-1/5 h-full"
+          ></div>
+          <div
+            ref={setRightNodeRef}
+            className="z-10 absolute right-0 top-0 w-1/5 h-full"
+          ></div>
+        </>
+      )}
       {Component ? (
-        <Component entityId={entity.id} />
+        <Component entityId={entity.id} disabled={inputDisabled} />
       ) : (
         <div>Unknown Entity</div>
       )}
@@ -106,9 +119,11 @@ export function Entity({
 export function EntitySwatch({
   name,
   icon,
+  disabled = false,
 }: {
   name: string;
   icon: ReactNode;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, isDragging, setNodeRef } = useDraggable({
     id: "swatch" + name,
@@ -116,16 +131,19 @@ export function EntitySwatch({
       name,
       icon,
     },
+    disabled,
   });
 
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
+      {...(!disabled ? attributes : {})}
+      {...(!disabled ? listeners : {})}
       className={cn(
-        "bg-input/30 hover:bg-input/50 cursor-pointer border border-border rounded-md aspect-square flex flex-col items-center justify-center gap-1.5",
-        isDragging && "opacity-50",
+        "bg-input/30 border border-border rounded-md aspect-square flex flex-col items-center justify-center gap-1.5",
+        !disabled && "hover:bg-input/50 cursor-pointer",
+        disabled && "opacity-50 cursor-not-allowed",
+        isDragging && !disabled && "opacity-50",
       )}
     >
       {icon}
