@@ -1,11 +1,8 @@
+import { findNode, depth, findPath, type TreeNode } from "@/lib/utils";
 import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
 
-export interface MenuItem {
-  id: string;
-  label: string;
-  children?: MenuItem[];
-}
+export type MenuItem = TreeNode<{ label: string }>;
 
 interface MenuStyles {
   className?: string;
@@ -75,7 +72,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     previousState: Readonly<RadialMenuState>,
   ) {
     if (this.props.value && this.props.value !== previousProps.value) {
-      const path = this.getPathById(this.props.menu, this.props.value);
+      const path = findPath(this.props.menu, this.props.value);
       if (path) {
         this.setState({ activePath: path.slice(0, -1) });
       }
@@ -103,7 +100,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     );
 
     const padding = strokeWidth / 2;
-    const maxDepth = this.getMaxDepth(visibleMenu);
+    const maxDepth = depth(visibleMenu);
     const maxRadius = baseRadius + (maxDepth - 1) * radiusStep + padding;
     const containerSize = maxRadius * 2;
     const centerX = containerSize / 2;
@@ -130,7 +127,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
               centerY: centerY + params.arc.centerY,
             };
             const pathData = this.getArcPath(adjustedArcParams);
-            const item = this.getItemById(this.props.menu, id);
+            const item = findNode(this.props.menu, id);
 
             return (
               <g
@@ -148,12 +145,12 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                   x={
                     centerX +
                     params.text.labelRadius *
-                    Math.sin((params.text.labelAngle * Math.PI) / 180)
+                      Math.sin((params.text.labelAngle * Math.PI) / 180)
                   }
                   y={
                     centerY -
                     params.text.labelRadius *
-                    Math.cos((params.text.labelAngle * Math.PI) / 180)
+                      Math.cos((params.text.labelAngle * Math.PI) / 180)
                   }
                   textAnchor="middle"
                   dominantBaseline="middle"
@@ -205,15 +202,13 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     this.setState((state) => {
       if (state.activePath.length === 0) return state;
 
-      const originalDepth = this.getMaxDepth(
+      const originalDepth = depth(
         this.getVisibleMenu(this.props.menu, state.activePath),
       );
 
       const newPath = state.activePath.slice(0, -1);
       while (newPath.length > 0) {
-        const newDepth = this.getMaxDepth(
-          this.getVisibleMenu(this.props.menu, newPath),
-        );
+        const newDepth = depth(this.getVisibleMenu(this.props.menu, newPath));
         if (newDepth < originalDepth) break;
 
         newPath.pop();
@@ -229,7 +224,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     const isLeaf = item && (!item.children || item.children.length === 0);
 
     this.setState((state) => {
-      const path = this.getPathById(this.props.menu, id);
+      const path = findPath(this.props.menu, id);
       if (!path) return state;
 
       return {
@@ -251,7 +246,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     let currentLevel = visibleMenu;
 
     for (const activeId of path) {
-      const activeItem = this.getItemById(menu, activeId);
+      const activeItem = findNode(menu, activeId);
 
       if (!activeItem?.children) break;
 
@@ -268,63 +263,6 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     }
 
     return visibleMenu;
-  }
-
-  private getPathById(menu: MenuItem[], targetId: string): string[] | null {
-    const stack: { node: MenuItem; path: string[] }[] = menu.map((item) => ({
-      node: item,
-      path: [item.id],
-    }));
-
-    while (stack.length > 0) {
-      const { node, path } = stack.pop()!;
-
-      if (node.id === targetId) return path;
-
-      if (node.children) {
-        for (const child of node.children) {
-          stack.push({
-            node: child,
-            path: [...path, child.id],
-          });
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private getItemById(menu: MenuItem[], id: MenuItem["id"]): MenuItem | null {
-    const stack = [...menu];
-
-    while (stack.length > 0) {
-      const item = stack.pop()!;
-      if (item.id === id) return item;
-      if (item.children) stack.push(...item.children);
-    }
-
-    return null;
-  }
-
-  private getMaxDepth(menu: MenuItem[]): number {
-    let depth = 0;
-    const queue = [menu];
-
-    while (queue.length > 0) {
-      const levelSize = queue.length;
-      depth++;
-
-      for (let i = 0; i < levelSize; i++) {
-        const items = queue.shift()!;
-        for (const item of items) {
-          if (item.children?.length) {
-            queue.push(item.children);
-          }
-        }
-      }
-    }
-
-    return depth;
   }
 
   private getMenuParams(menu: MenuItem[]): Map<MenuItem["id"], MenuParams> {

@@ -8,11 +8,11 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import type { MenuItem } from "@/components/radial-menu";
+import type { MenuTreeNode } from "../context";
 import { cn } from "@/lib/utils";
 
 interface NodeProps {
-  item: MenuItem;
+  item: MenuTreeNode;
   indent?: number;
   editMode: boolean;
   hideActions?: boolean;
@@ -66,9 +66,12 @@ export function Node({
       <span style={{ width: indent * 10 }} />
       <div className="flex gap-1.5 items-center w-full">
         <span
-          className={cn("flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5", {
-            "hover:bg-accent": item.children && item.children.length > 0,
-          })}
+          className={cn(
+            "flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5",
+            {
+              "hover:bg-accent": item.children && item.children.length > 0,
+            },
+          )}
           onClick={(e) => {
             if (item.children && item.children.length > 0) {
               e.stopPropagation();

@@ -268,11 +268,11 @@ export default function MenuEditor() {
                   editMode={false}
                   hideActions
                   selected
-                  onEdit={() => { }}
-                  onAdd={() => { }}
-                  onDelete={() => { }}
-                  onSelect={() => { }}
-                  onCommit={() => { }}
+                  onEdit={() => {}}
+                  onAdd={() => {}}
+                  onDelete={() => {}}
+                  onSelect={() => {}}
+                  onCommit={() => {}}
                 />
               </div>
             )}
