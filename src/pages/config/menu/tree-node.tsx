@@ -1,19 +1,19 @@
 import { useDroppable } from "@dnd-kit/core";
-import type { MenuItem } from "@/components/radial-menu";
+import type { MenuTreeNode } from "@/components/radial-menu";
 
 import { Node } from "./node";
 
 interface TreeNodeProps {
-  tree: MenuItem[];
+  tree: MenuTreeNode[];
   isTopLevel?: boolean;
   indent?: number;
-  editItem: MenuItem["id"] | null;
-  setEditItem: (id: MenuItem["id"] | null) => void;
-  selectedItem: MenuItem["id"] | null;
-  setSelectedItem: (id: MenuItem["id"] | null) => void;
-  setText: (id: MenuItem["id"], value: string) => void;
-  addChild: (id: MenuItem["id"]) => void;
-  removeChild: (id: MenuItem["id"]) => void;
+  editItem: MenuTreeNode["id"] | null;
+  setEditItem: (id: MenuTreeNode["id"] | null) => void;
+  selectedItem: MenuTreeNode["id"] | null;
+  setSelectedItem: (id: MenuTreeNode["id"] | null) => void;
+  setText: (id: MenuTreeNode["id"], value: string) => void;
+  addChild: (id: MenuTreeNode["id"]) => void;
+  removeChild: (id: MenuTreeNode["id"]) => void;
   expandedNodes: Set<string>;
   onToggleExpand: (id: string) => void;
 }
@@ -24,7 +24,7 @@ function TreeItem({
   item,
   index,
   ...props
-}: { item: MenuItem; index: number } & TreeNodeProps) {
+}: { item: MenuTreeNode; index: number } & TreeNodeProps) {
   const { setNodeRef: setInsideRef, isOver: isOverInside } = useDroppable({
     id: `${item.id}::inside`,
   });

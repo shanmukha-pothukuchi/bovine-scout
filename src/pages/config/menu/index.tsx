@@ -12,7 +12,7 @@ import {
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import RadialMenu, { type MenuItem } from "@/components/radial-menu";
+import RadialMenu, { type MenuTreeNode } from "@/components/radial-menu";
 
 import { Node } from "./node";
 import { TreeNode } from "./tree-node";
@@ -33,7 +33,7 @@ export default function MenuEditor() {
 
   const menuTree = menuTrees[gamePeriod] || [];
 
-  const setMenuTree: React.Dispatch<React.SetStateAction<MenuItem[]>> = (
+  const setMenuTree: React.Dispatch<React.SetStateAction<MenuTreeNode[]>> = (
     action,
   ) => {
     setMenuTrees((prev) => {
@@ -44,9 +44,11 @@ export default function MenuEditor() {
     });
   };
 
-  const [editItem, setEditItem] = useState<MenuItem["id"] | null>(null);
-  const [selectedItem, setSelectedItem] = useState<MenuItem["id"] | null>(null);
-  const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
+  const [editItem, setEditItem] = useState<MenuTreeNode["id"] | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MenuTreeNode["id"] | null>(
+    null,
+  );
+  const [activeItem, setActiveItem] = useState<MenuTreeNode | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
@@ -65,8 +67,8 @@ export default function MenuEditor() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const setMenuTreeProperty = (id: MenuItem["id"], value: string) => {
-    const update = (nodes: MenuItem[]): MenuItem[] =>
+  const setMenuTreeProperty = (id: MenuTreeNode["id"], value: string) => {
+    const update = (nodes: MenuTreeNode[]): MenuTreeNode[] =>
       nodes.map((node) => {
         if (node.id === id) return { ...node, label: value };
         if (node.children) return { ...node, children: update(node.children) };
@@ -78,8 +80,8 @@ export default function MenuEditor() {
 
   const getItemById = (
     id: UniqueIdentifier,
-    items: MenuItem[],
-  ): MenuItem | null => {
+    items: MenuTreeNode[],
+  ): MenuTreeNode | null => {
     for (const item of items) {
       if (item.id === id) return item;
       if (item.children) {
@@ -92,8 +94,8 @@ export default function MenuEditor() {
 
   const getParentByChildId = (
     childId: string,
-    items: MenuItem[],
-  ): MenuItem | null => {
+    items: MenuTreeNode[],
+  ): MenuTreeNode | null => {
     for (const item of items) {
       if (item.children?.some((c) => c.id === childId)) return item;
       if (item.children) {
@@ -104,7 +106,7 @@ export default function MenuEditor() {
     return null;
   };
 
-  const removeNode = (id: string, nodes: MenuItem[]): MenuItem[] =>
+  const removeNode = (id: string, nodes: MenuTreeNode[]): MenuTreeNode[] =>
     nodes
       .filter((n) => n.id !== id)
       .map((n) =>
@@ -112,11 +114,11 @@ export default function MenuEditor() {
       );
 
   const insertNode = (
-    tree: MenuItem[],
+    tree: MenuTreeNode[],
     parentId: string | null,
     index: number,
-    node: MenuItem,
-  ): MenuItem[] => {
+    node: MenuTreeNode,
+  ): MenuTreeNode[] => {
     if (parentId === null) {
       const copy = [...tree];
       copy.splice(index, 0, node);
@@ -136,15 +138,15 @@ export default function MenuEditor() {
     });
   };
 
-  const isDescendant = (parent: MenuItem, childId: string): boolean =>
+  const isDescendant = (parent: MenuTreeNode, childId: string): boolean =>
     parent.children?.some(
       (c) => c.id === childId || isDescendant(c, childId),
     ) ?? false;
 
   const getIndexUnderParent = (
     targetId: string,
-    parent: MenuItem | null,
-    tree: MenuItem[],
+    parent: MenuTreeNode | null,
+    tree: MenuTreeNode[],
   ): number => {
     const siblings = parent ? (parent.children ?? []) : tree;
     return siblings.findIndex((n) => n.id === targetId);

@@ -1,4 +1,4 @@
-import type { MenuItem } from "@/components/radial-menu";
+import type { MenuTreeNode } from "@/components/radial-menu";
 import React, {
   createContext,
   useContext,
@@ -8,9 +8,9 @@ import React, {
 import type { FormStructure } from "./form";
 
 interface ConfigContextType {
-  menuTrees: Record<string, MenuItem[]>;
+  menuTrees: Record<string, MenuTreeNode[]>;
   setMenuTrees: React.Dispatch<
-    React.SetStateAction<Record<string, MenuItem[]>>
+    React.SetStateAction<Record<string, MenuTreeNode[]>>
   >;
   gamePeriods: string[];
   formStructure: FormStructure;
@@ -34,7 +34,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     "End Game",
   ]);
 
-  const defaultTree: MenuItem[] = [
+  const defaultTree: MenuTreeNode[] = [
     { id: "defense", label: "Defense" },
     { id: "utility", label: "Utility" },
     {
@@ -57,13 +57,15 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     { id: "support", label: "Support" },
   ];
 
-  const [menuTrees, setMenuTrees] = useState<Record<string, MenuItem[]>>(() => {
-    const trees: Record<string, MenuItem[]> = {};
-    for (const period of gamePeriods) {
-      trees[period] = [...defaultTree];
-    }
-    return trees;
-  });
+  const [menuTrees, setMenuTrees] = useState<Record<string, MenuTreeNode[]>>(
+    () => {
+      const trees: Record<string, MenuTreeNode[]> = {};
+      for (const period of gamePeriods) {
+        trees[period] = [...defaultTree];
+      }
+      return trees;
+    },
+  );
 
   const [formStructure, setFormStructure] = useState<FormStructure>({
     id: "form",

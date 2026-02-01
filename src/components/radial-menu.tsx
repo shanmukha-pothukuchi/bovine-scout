@@ -2,7 +2,7 @@ import { findNode, depth, findPath, type TreeNode } from "@/lib/utils";
 import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
 
-export type MenuItem = TreeNode<{ label: string }>;
+export type MenuTreeNode = TreeNode<{ label: string }>;
 
 interface MenuStyles {
   className?: string;
@@ -19,11 +19,11 @@ interface MenuStyles {
 }
 
 interface RadialMenuProps {
-  menu: MenuItem[];
+  menu: MenuTreeNode[];
   style?: Partial<MenuStyles>;
-  value?: MenuItem["id"];
-  onSelect?: (id: MenuItem["id"]) => void;
-  onNavigation?: (path: MenuItem["id"][]) => void;
+  value?: MenuTreeNode["id"];
+  onSelect?: (id: MenuTreeNode["id"]) => void;
+  onNavigation?: (path: MenuTreeNode["id"][]) => void;
 }
 
 interface ArcParams {
@@ -44,7 +44,7 @@ interface TextParams {
 type MenuParams = { arc: ArcParams; text: TextParams };
 
 interface RadialMenuState {
-  activePath: MenuItem["id"][];
+  activePath: MenuTreeNode["id"][];
 }
 
 class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
@@ -220,7 +220,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     });
   }
 
-  private handleItemClick(id: MenuItem["id"], item: MenuItem | null) {
+  private handleItemClick(id: MenuTreeNode["id"], item: MenuTreeNode | null) {
     const isLeaf = item && (!item.children || item.children.length === 0);
 
     this.setState((state) => {
@@ -237,10 +237,13 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     }
   }
 
-  private getVisibleMenu(menu: MenuItem[], path: MenuItem["id"][]): MenuItem[] {
-    const visibleMenu: MenuItem[] = menu.map((item) => ({
+  private getVisibleMenu(
+    menu: MenuTreeNode[],
+    path: MenuTreeNode["id"][],
+  ): MenuTreeNode[] {
+    const visibleMenu: MenuTreeNode[] = menu.map((item) => ({
       ...item,
-      children: [] as MenuItem[],
+      children: [] as MenuTreeNode[],
     }));
 
     let currentLevel = visibleMenu;
@@ -255,7 +258,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
       if (targetItem) {
         targetItem.children = activeItem.children.map((child) => ({
           ...child,
-          children: [] as MenuItem[],
+          children: [] as MenuTreeNode[],
         }));
 
         currentLevel = targetItem.children;
@@ -265,8 +268,10 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     return visibleMenu;
   }
 
-  private getMenuParams(menu: MenuItem[]): Map<MenuItem["id"], MenuParams> {
-    const menuItemArcParams = new Map<MenuItem["id"], MenuParams>();
+  private getMenuParams(
+    menu: MenuTreeNode[],
+  ): Map<MenuTreeNode["id"], MenuParams> {
+    const menuItemArcParams = new Map<MenuTreeNode["id"], MenuParams>();
     const {
       baseRadius,
       radiusStep,
@@ -276,8 +281,8 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     } = this.props.style as MenuStyles;
 
     interface MenuNode {
-      item: MenuItem;
-      parent: MenuItem | null;
+      item: MenuTreeNode;
+      parent: MenuTreeNode | null;
       depth: number;
     }
 
