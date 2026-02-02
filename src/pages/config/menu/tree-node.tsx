@@ -9,7 +9,7 @@ interface TreeNodeProps {
   indent?: number;
   editItem: MenuTreeNode["id"] | null;
   setEditItem: (id: MenuTreeNode["id"] | null) => void;
-  selectedItem: MenuTreeNode["id"] | null;
+  selectedItem?: MenuTreeNode["id"];
   setSelectedItem: (id: MenuTreeNode["id"] | null) => void;
   setText: (id: MenuTreeNode["id"], value: string) => void;
   addChild: (id: MenuTreeNode["id"]) => void;

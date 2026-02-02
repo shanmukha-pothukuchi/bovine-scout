@@ -35,26 +35,70 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   ]);
 
   const defaultTree: MenuTreeNode[] = [
-    { id: "defense", label: "Defense" },
-    { id: "utility", label: "Utility" },
+    {
+      id: "defense",
+      label: "Defense",
+      type: "instantaneous",
+      includeForm: false,
+    },
+    {
+      id: "utility",
+      label: "Utility",
+      type: "instantaneous",
+      includeForm: false,
+    },
     {
       id: "offense",
       label: "Offense",
+      type: "instantaneous",
+      includeForm: false,
       children: [
         {
           id: "magic",
           label: "Magic",
+          type: "instantaneous",
+          includeForm: false,
           children: [
-            { id: "fire", label: "Fire" },
-            { id: "ice", label: "Ice" },
-            { id: "lightning", label: "Lightning" },
+            {
+              id: "fire",
+              label: "Fire",
+              type: "instantaneous",
+              includeForm: false,
+            },
+            {
+              id: "ice",
+              label: "Ice",
+              type: "instantaneous",
+              includeForm: false,
+            },
+            {
+              id: "lightning",
+              label: "Lightning",
+              type: "instantaneous",
+              includeForm: false,
+            },
           ],
         },
-        { id: "melee", label: "Melee" },
-        { id: "ranged", label: "Ranged" },
+        {
+          id: "melee",
+          label: "Melee",
+          type: "instantaneous",
+          includeForm: false,
+        },
+        {
+          id: "ranged",
+          label: "Ranged",
+          type: "instantaneous",
+          includeForm: false,
+        },
       ],
     },
-    { id: "support", label: "Support" },
+    {
+      id: "support",
+      label: "Support",
+      type: "instantaneous",
+      includeForm: false,
+    },
   ];
 
   const [menuTrees, setMenuTrees] = useState<Record<string, MenuTreeNode[]>>(

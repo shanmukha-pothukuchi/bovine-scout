@@ -1,8 +1,6 @@
 import { numberEntity } from "@/components/form-builder/entities/number";
 import { sliderEntity } from "@/components/form-builder/entities/slider";
 import { textEntity } from "@/components/form-builder/entities/text";
-import { useConfig } from "../context";
-
 import { Button } from "@/components/ui/button";
 import { FormProvider, useFormContext } from "@/lib/form-builder";
 import {
@@ -18,7 +16,8 @@ import {
 } from "@dnd-kit/core";
 import { IconChevronLeft } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { type ReactNode, useState, useMemo } from "react";
+import { type ReactNode, useMemo, useState } from "react";
+import { useConfig } from "../context";
 import { Entity, type EntityStructure, EntitySwatch } from "./entity";
 import { Row, type RowStructure } from "./row";
 

@@ -1,8 +1,18 @@
-import { findNode, depth, findPath, type TreeNode } from "@/lib/utils";
+import {
+  findNode,
+  depth,
+  findPath,
+  isLeafNode,
+  type TreeNode,
+} from "@/lib/utils";
 import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
 
-export type MenuTreeNode = TreeNode<{ label: string }>;
+export type MenuTreeNode = TreeNode<{
+  label: string;
+  type?: "instantaneous" | "duration";
+  includeForm?: boolean;
+}>;
 
 interface MenuStyles {
   className?: string;
@@ -221,7 +231,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
   }
 
   private handleItemClick(id: MenuTreeNode["id"], item: MenuTreeNode | null) {
-    const isLeaf = item && (!item.children || item.children.length === 0);
+    const isLeaf = isLeafNode(item);
 
     this.setState((state) => {
       const path = findPath(this.props.menu, id);

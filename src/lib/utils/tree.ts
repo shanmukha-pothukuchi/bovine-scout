@@ -100,6 +100,10 @@ export function hasDescendant<T extends TreeNode>(
   return false;
 }
 
+export function isLeafNode<T extends TreeNode>(node: T | null): boolean {
+  return node !== null && (!node.children || node.children.length === 0);
+}
+
 export function remove<T extends TreeNode>(
   nodes: T[],
   targetId: TreeNode["id"],
@@ -154,4 +158,21 @@ export function indexOfChild<T extends TreeNode>(
 ): number {
   const siblings = parent ? ((parent.children as T[]) ?? []) : nodes;
   return siblings.findIndex((n) => n.id === targetId);
+}
+
+export function update<T extends TreeNode>(
+  nodes: T[],
+  targetId: TreeNode["id"],
+  updates: Partial<Omit<T, "id" | "children">>,
+): T[] {
+  const process = (items: T[]): T[] => {
+    return items.map((node) => {
+      if (node.id === targetId) return { ...node, ...updates };
+      if (node.children)
+        return { ...node, children: process(node.children as T[]) } as T;
+      return node;
+    });
+  };
+
+  return process(nodes);
 }
