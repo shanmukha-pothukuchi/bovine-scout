@@ -1,4 +1,4 @@
-import RadialMenu, { type MenuTreeNode } from "@/components/radial-menu";
+import RadialMenu, { type RadialMenuNode } from "@/components/radial-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   findNode,
   findParent,
+  findPath,
   hasDescendant,
   indexOfChild,
   insert,
@@ -34,11 +35,12 @@ import { IconChevronLeft, IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import type { MenuTreeNode } from "../context";
 import { useConfig } from "../context";
 import { Node } from "./node";
 import { TreeNode } from "./tree-node";
 
-const filterMenuForRender = (nodes: MenuTreeNode[]): MenuTreeNode[] =>
+const filterMenuForRender = (nodes: MenuTreeNode[]): RadialMenuNode[] =>
   nodes.map(({ type, includeForm, ...node }) => ({
     ...node,
     children: node.children ? filterMenuForRender(node.children) : undefined,
@@ -69,6 +71,20 @@ export default function MenuEditor() {
     null,
   );
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+
+  const selectItem = (id: MenuTreeNode["id"] | null) => {
+    setSelectedItem(id);
+    if (id) {
+      const path = findPath(menuTree, id);
+      if (path && path.length > 1) {
+        setExpandedNodes((prev) => {
+          const next = new Set(prev);
+          for (const ancestor of path.slice(0, -1)) next.add(ancestor);
+          return next;
+        });
+      }
+    }
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedNodes((prev) => {
@@ -237,7 +253,8 @@ export default function MenuEditor() {
       <div className="flex-1 flex items-center justify-center">
         <RadialMenu
           menu={filterMenuForRender(menuTree)}
-          onSelect={(id) => setSelectedItem(id)}
+          onSelect={(id) => selectItem(id)}
+          onNavigation={(path) => selectItem(path.at(-1) ?? null)}
           value={selectedItem!}
         />
       </div>

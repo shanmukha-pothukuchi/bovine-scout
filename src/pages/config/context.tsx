@@ -1,4 +1,4 @@
-import type { MenuTreeNode } from "@/components/radial-menu";
+import type { TreeNode } from "@/lib/utils";
 import React, {
   createContext,
   useContext,
@@ -7,7 +7,13 @@ import React, {
 } from "react";
 import type { FormStructure } from "./form";
 
-interface ConfigContextType {
+export type MenuTreeNode = TreeNode<{
+  label: string;
+  type?: "instantaneous" | "duration";
+  includeForm?: boolean;
+}>;
+
+export interface ConfigContextType {
   menuTrees: Record<string, MenuTreeNode[]>;
   setMenuTrees: React.Dispatch<
     React.SetStateAction<Record<string, MenuTreeNode[]>>

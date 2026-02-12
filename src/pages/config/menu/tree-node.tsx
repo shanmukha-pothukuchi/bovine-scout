@@ -1,5 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-import type { MenuTreeNode } from "@/components/radial-menu";
+import type { MenuTreeNode } from "../context";
 
 import { Node } from "./node";
 

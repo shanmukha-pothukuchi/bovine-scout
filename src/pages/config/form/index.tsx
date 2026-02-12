@@ -77,7 +77,7 @@ function FormEditor({
           <div className="text-sm font-medium text-muted-foreground">
             Canvas
           </div>
-          <Button variant="outline" onClick={onPreviewToggle}>
+          <Button variant="outline" size="sm" onClick={onPreviewToggle}>
             {isPreview ? "Exit Preview" : "Preview"}
           </Button>
         </div>
@@ -156,9 +156,15 @@ function FormEditor({
 
 function FormEditorContainer() {
   const { formStructure, setFormStructure } = useConfig();
-  const { entityRegistry, registerEntity, deregisterEntity } = useFormContext();
+  const { entityRegistry, registerEntity, deregisterEntity, resetValues } =
+    useFormContext();
 
   const [isPreview, setIsPreview] = useState(false);
+
+  const handlePreviewToggle = () => {
+    if (isPreview) resetValues();
+    setIsPreview(!isPreview);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -342,7 +348,7 @@ function FormEditorContainer() {
       <FormEditor
         form={formStructure}
         isPreview={isPreview}
-        onPreviewToggle={() => setIsPreview(!isPreview)}
+        onPreviewToggle={handlePreviewToggle}
       />
       {activeEntitySwatch && !isPreview && (
         <DragOverlay>

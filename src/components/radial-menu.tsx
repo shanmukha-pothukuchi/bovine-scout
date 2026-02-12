@@ -8,10 +8,8 @@ import {
 import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { Component } from "react";
 
-export type MenuTreeNode = TreeNode<{
+export type RadialMenuNode = TreeNode<{
   label: string;
-  type?: "instantaneous" | "duration";
-  includeForm?: boolean;
 }>;
 
 interface MenuStyles {
@@ -29,11 +27,11 @@ interface MenuStyles {
 }
 
 interface RadialMenuProps {
-  menu: MenuTreeNode[];
+  menu: RadialMenuNode[];
   style?: Partial<MenuStyles>;
-  value?: MenuTreeNode["id"];
-  onSelect?: (id: MenuTreeNode["id"]) => void;
-  onNavigation?: (path: MenuTreeNode["id"][]) => void;
+  value?: RadialMenuNode["id"];
+  onSelect?: (id: RadialMenuNode["id"]) => void;
+  onNavigation?: (path: RadialMenuNode["id"][]) => void;
 }
 
 interface ArcParams {
@@ -54,7 +52,7 @@ interface TextParams {
 type MenuParams = { arc: ArcParams; text: TextParams };
 
 interface RadialMenuState {
-  activePath: MenuTreeNode["id"][];
+  activePath: RadialMenuNode["id"][];
 }
 
 class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
@@ -77,19 +75,21 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     this.state = { activePath: [] };
   }
 
-  componentDidUpdate(
-    previousProps: Readonly<RadialMenuProps>,
-    previousState: Readonly<RadialMenuState>,
-  ) {
+  componentDidUpdate(previousProps: Readonly<RadialMenuProps>) {
     if (this.props.value && this.props.value !== previousProps.value) {
-      const path = findPath(this.props.menu, this.props.value);
-      if (path) {
-        this.setState({ activePath: path.slice(0, -1) });
+      const currentLast = this.state.activePath.at(-1);
+      if (currentLast !== this.props.value) {
+        const path = findPath(this.props.menu, this.props.value);
+        if (path) {
+          const newActivePath = path.slice(0, -1);
+          if (
+            newActivePath.length !== this.state.activePath.length ||
+            newActivePath.some((v, i) => v !== this.state.activePath[i])
+          ) {
+            this.setState({ activePath: newActivePath });
+          }
+        }
       }
-    }
-
-    if (this.state.activePath !== previousState.activePath) {
-      this.props.onNavigation?.(this.state.activePath);
     }
   }
 
@@ -209,51 +209,60 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
   }
 
   private handleCenterClick() {
-    this.setState((state) => {
-      if (state.activePath.length === 0) return state;
+    this.setState(
+      (state) => {
+        if (state.activePath.length === 0) return state;
 
-      const originalDepth = depth(
-        this.getVisibleMenu(this.props.menu, state.activePath),
-      );
+        const originalDepth = depth(
+          this.getVisibleMenu(this.props.menu, state.activePath),
+        );
 
-      const newPath = state.activePath.slice(0, -1);
-      while (newPath.length > 0) {
-        const newDepth = depth(this.getVisibleMenu(this.props.menu, newPath));
-        if (newDepth < originalDepth) break;
+        const newPath = state.activePath.slice(0, -1);
+        while (newPath.length > 0) {
+          const newDepth = depth(this.getVisibleMenu(this.props.menu, newPath));
+          if (newDepth < originalDepth) break;
 
-        newPath.pop();
-      }
+          newPath.pop();
+        }
 
-      return {
-        activePath: newPath,
-      };
-    });
+        return {
+          activePath: newPath,
+        };
+      },
+      () => this.props.onNavigation?.(this.state.activePath),
+    );
   }
 
-  private handleItemClick(id: MenuTreeNode["id"], item: MenuTreeNode | null) {
+  private handleItemClick(
+    id: RadialMenuNode["id"],
+    item: RadialMenuNode | null,
+  ) {
     const isLeaf = isLeafNode(item);
-
-    this.setState((state) => {
-      const path = findPath(this.props.menu, id);
-      if (!path) return state;
-
-      return {
-        activePath: isLeaf ? path.slice(0, -1) : path,
-      };
-    });
 
     if (isLeaf) {
       this.props.onSelect?.(id);
+    } else {
+      this.setState(
+        (state) => {
+          const path = findPath(this.props.menu, id);
+          if (!path) return state;
+
+          return {
+            activePath: path,
+          };
+        },
+        () => this.props.onNavigation?.(this.state.activePath),
+      );
     }
   }
 
   private getVisibleMenu(
-    menu: MenuTreeNode[],
-    path: MenuTreeNode["id"][],
-  ): MenuTreeNode[] {
-    const visibleMenu: MenuTreeNode[] = menu.map((item) => ({
+    menu: RadialMenuNode[],
+    path: RadialMenuNode["id"][],
+  ): RadialMenuNode[] {
+    const visibleMenu: RadialMenuNode[] = menu.map((item) => ({
       ...item,
-      children: [] as MenuTreeNode[],
+      children: [] as RadialMenuNode[],
     }));
 
     let currentLevel = visibleMenu;
@@ -268,7 +277,7 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
       if (targetItem) {
         targetItem.children = activeItem.children.map((child) => ({
           ...child,
-          children: [] as MenuTreeNode[],
+          children: [] as RadialMenuNode[],
         }));
 
         currentLevel = targetItem.children;
@@ -279,9 +288,9 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
   }
 
   private getMenuParams(
-    menu: MenuTreeNode[],
-  ): Map<MenuTreeNode["id"], MenuParams> {
-    const menuItemArcParams = new Map<MenuTreeNode["id"], MenuParams>();
+    menu: RadialMenuNode[],
+  ): Map<RadialMenuNode["id"], MenuParams> {
+    const menuItemArcParams = new Map<RadialMenuNode["id"], MenuParams>();
     const {
       baseRadius,
       radiusStep,
@@ -291,8 +300,8 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
     } = this.props.style as MenuStyles;
 
     interface MenuNode {
-      item: MenuTreeNode;
-      parent: MenuTreeNode | null;
+      item: RadialMenuNode;
+      parent: RadialMenuNode | null;
       depth: number;
     }
 

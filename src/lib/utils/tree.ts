@@ -89,6 +89,7 @@ export function hasDescendant<T extends TreeNode>(
   parent: T,
   childId: TreeNode["id"],
 ): boolean {
+  if (!parent.children?.length) return false;
   const stack = [...(parent.children as T[])];
 
   while (stack.length > 0) {
@@ -112,7 +113,9 @@ export function remove<T extends TreeNode>(
     return items
       .filter((n) => n.id !== targetId)
       .map((n) =>
-        n.children ? ({ ...n, children: process(n.children as T[]) } as T) : n,
+        n.children?.length
+          ? ({ ...n, children: process(n.children as T[]) } as T)
+          : n,
       );
   };
 
@@ -134,12 +137,12 @@ export function insert<T extends TreeNode>(
   const process = (items: T[]): T[] => {
     return items.map((n) => {
       if (n.id === parentId) {
-        const children = [...(n.children as T[])];
+        const children = [...((n.children as T[]) ?? [])];
         children.splice(index, 0, node);
         return { ...n, children } as T;
       }
 
-      return n.children
+      return n.children?.length
         ? ({
             ...n,
             children: process(n.children as T[]),

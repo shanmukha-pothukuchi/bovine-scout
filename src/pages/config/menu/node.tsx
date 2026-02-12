@@ -91,7 +91,17 @@ export function Node({
             <input
               className="bg-input border-b border-border w-full mr-1.5 appearance-none outline-none"
               value={tempText}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onCommit(tempText);
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  onCommit(null);
+                }
+              }}
               onChange={(e) => setTempText(e.target.value)}
+              autoFocus
             />
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
