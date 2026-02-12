@@ -14,7 +14,9 @@ export default function Layout() {
           <Outlet />
         </div>
         <div className="border-t border-border bg-sidebar p-2.5">
-          <p className="text-center text-sm">{currentHandle?.title}</p>
+          <p className="text-center text-sm font-medium">
+            {currentHandle?.title}
+          </p>
         </div>
       </div>
     </ConfigProvider>

@@ -5,7 +5,7 @@ import {
   isLeafNode,
   type TreeNode,
 } from "@/lib/utils";
-import { IconArrowLeft, IconX } from "@tabler/icons-react";
+import { ArrowLeftIcon, XIcon } from "@phosphor-icons/react";
 import { Component } from "react";
 
 export type RadialMenuNode = TreeNode<{
@@ -196,9 +196,9 @@ class RadialMenu extends Component<RadialMenuProps, RadialMenuState> {
                 className="cursor-pointer select-none"
               >
                 {this.state.activePath.length > 0 ? (
-                  <IconArrowLeft width={iconSize} height={iconSize} />
+                  <ArrowLeftIcon width={iconSize} height={iconSize} />
                 ) : (
-                  <IconX width={iconSize} height={iconSize} />
+                  <XIcon width={iconSize} height={iconSize} />
                 )}
               </g>
             </g>

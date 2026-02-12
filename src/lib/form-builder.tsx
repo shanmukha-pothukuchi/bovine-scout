@@ -53,7 +53,7 @@ export interface Entity<
   TValue,
 > {
   name: TName;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ size?: number | string }>;
   attributes: TAttributes;
   defaultValue: TValue;
   validate: (

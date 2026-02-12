@@ -1,7 +1,7 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useFormContext } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import type { ComponentType } from "react";
 
 export interface EntityStructure {
   id: string;
@@ -118,18 +118,18 @@ export function Entity({
 
 export function EntitySwatch({
   name,
-  icon,
+  icon: IconComponent,
   disabled = false,
 }: {
   name: string;
-  icon: ReactNode;
+  icon: ComponentType<{ size?: number | string }>;
   disabled?: boolean;
 }) {
   const { attributes, listeners, isDragging, setNodeRef } = useDraggable({
     id: "swatch" + name,
     data: {
       name,
-      icon,
+      icon: IconComponent,
     },
     disabled,
   });
@@ -146,7 +146,7 @@ export function EntitySwatch({
         isDragging && !disabled && "opacity-50",
       )}
     >
-      {icon}
+      <IconComponent size={24} />
       <span className="text-sm">{name}</span>
     </div>
   );

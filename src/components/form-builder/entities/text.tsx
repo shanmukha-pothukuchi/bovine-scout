@@ -5,11 +5,11 @@ import { labelAttr } from "@/components/form-builder/attributes/label";
 import { placeholderAttr } from "@/components/form-builder/attributes/placeholder";
 import { requiredAttr } from "@/components/form-builder/attributes/required";
 import { z } from "zod";
-import { IconTextCaption } from "@tabler/icons-react";
+import { TextTIcon } from "@phosphor-icons/react";
 
 export const textEntity = makeEntity({
   name: "Text",
-  icon: <IconTextCaption />,
+  icon: TextTIcon,
   attributes: {
     label: labelAttr,
     placeholder: placeholderAttr,

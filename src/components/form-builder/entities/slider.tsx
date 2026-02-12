@@ -3,13 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { makeAttribute, makeEntity } from "@/lib/form-builder";
-import { IconAdjustmentsAlt } from "@tabler/icons-react";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { z } from "zod";
 
 export const sliderEntity = makeEntity({
   name: "Slider",
-  icon: <IconAdjustmentsAlt />,
+  icon: SlidersHorizontalIcon,
   attributes: {
     label: labelAttr,
     min: makeAttribute({

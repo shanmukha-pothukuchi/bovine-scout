@@ -3,12 +3,12 @@ import { placeholderAttr } from "@/components/form-builder/attributes/placeholde
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { makeEntity } from "@/lib/form-builder";
-import { IconNumber } from "@tabler/icons-react";
+import { HashIcon } from "@phosphor-icons/react";
 import { z } from "zod";
 
 export const numberEntity = makeEntity({
   name: "Number",
-  icon: <IconNumber />,
+  icon: HashIcon,
   attributes: {
     label: labelAttr,
     placeholder: placeholderAttr,

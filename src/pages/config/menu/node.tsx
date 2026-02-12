@@ -1,12 +1,12 @@
 import { useDraggable } from "@dnd-kit/core";
 import {
-  IconCheck,
-  IconChevronRight,
-  IconPencil,
-  IconPlus,
-  IconTrash,
-  IconX,
-} from "@tabler/icons-react";
+  CheckIcon,
+  CaretRightIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { MenuTreeNode } from "../context";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,7 @@ export function Node({
           }}
         >
           {item.children && item.children.length > 0 && (
-            <IconChevronRight
+            <CaretRightIcon
               className={`opacity-50 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
             />
           )}
@@ -107,13 +107,13 @@ export function Node({
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
               onClick={() => onCommit(null)}
             >
-              <IconX className="opacity-50 w-4" />
+              <XIcon className="opacity-50 w-4" />
             </span>
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
               onClick={() => onCommit(tempText)}
             >
-              <IconCheck className="opacity-50 w-4" />
+              <CheckIcon className="opacity-50 w-4" />
             </span>
           </div>
         ) : (
@@ -128,19 +128,19 @@ export function Node({
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
               onClick={onDelete}
             >
-              <IconTrash className="opacity-50 w-4" />
+              <TrashIcon className="opacity-50 w-4" />
             </span>
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
               onClick={onEdit}
             >
-              <IconPencil className="opacity-50 w-4" />
+              <PencilIcon className="opacity-50 w-4" />
             </span>
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
               onClick={onAdd}
             >
-              <IconPlus className="opacity-50 w-4" />
+              <PlusIcon className="opacity-50 w-4" />
             </span>
           </div>
         )}

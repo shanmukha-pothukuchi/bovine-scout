@@ -14,9 +14,9 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { IconChevronLeft } from "@tabler/icons-react";
+import { CaretLeftIcon } from "@phosphor-icons/react";
 import { nanoid } from "nanoid";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ComponentType, useMemo, useState } from "react";
 import { useConfig } from "../context";
 import { Entity, type EntityStructure, EntitySwatch } from "./entity";
 import { Row, type RowStructure } from "./row";
@@ -103,7 +103,7 @@ function FormEditor({
                 size="icon"
                 onClick={() => setSelected(null)}
               >
-                <IconChevronLeft className="opacity-50" />
+                <CaretLeftIcon className="opacity-50" />
               </Button>
               <div className="text-sm font-medium text-muted-foreground">
                 Properties
@@ -172,7 +172,7 @@ function FormEditorContainer() {
 
   const [activeEntitySwatch, setActiveEntitySwatch] = useState<{
     name: string;
-    icon: ReactNode;
+    icon: ComponentType<{ size?: number | string }>;
   } | null>(null);
   const [activeEntity, setActiveEntity] = useState<{
     entityId: string;
@@ -189,7 +189,7 @@ function FormEditorContainer() {
     if (active.id.toString().startsWith("swatch")) {
       const { name, icon } = active.data.current as {
         name: string;
-        icon: ReactNode;
+        icon: ComponentType<{ size?: number | string }>;
       };
       setActiveEntitySwatch({ name, icon });
     } else if (active.id.toString().startsWith("entity")) {

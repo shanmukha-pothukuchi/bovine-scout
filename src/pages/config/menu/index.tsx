@@ -31,7 +31,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { IconChevronLeft, IconPlus } from "@tabler/icons-react";
+import { CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -199,7 +199,7 @@ export default function MenuEditor() {
                 ]);
               }}
             >
-              <IconPlus className="opacity-50" />
+              <PlusIcon className="opacity-50" />
             </Button>
           </div>
 
@@ -273,7 +273,7 @@ export default function MenuEditor() {
                     size="icon"
                     onClick={() => setSelectedItem(null)}
                   >
-                    <IconChevronLeft className="opacity-50" />
+                    <CaretLeftIcon className="opacity-50" />
                   </Button>
                   <div className="text-sm font-medium text-muted-foreground">
                     Properties
