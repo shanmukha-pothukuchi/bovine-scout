@@ -571,11 +571,6 @@ export function makeEntity<
 
     useEffect(() => {
       formContext.registerEntity(entityId, options);
-      return () => {
-        if (formContext.getEntityState(entityId)) {
-          formContext.deregisterEntity(entityId);
-        }
-      };
     }, [entityId]);
 
     const entityState =

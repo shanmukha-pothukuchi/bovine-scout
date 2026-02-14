@@ -234,17 +234,56 @@ function FormEditorContainer() {
 
     const activeId = active.id.toString();
     const overId = over?.id.toString() ?? "";
+    const isSwatchDrag = activeId.startsWith("swatch");
+    const isEntityDrag = activeId.startsWith("entity");
+
+    const isValidDropTarget =
+      overId === "form" ||
+      overId.startsWith("top") ||
+      overId.startsWith("bottom") ||
+      overId.startsWith("left") ||
+      overId.startsWith("right") ||
+      overId.startsWith("row");
+
+    const cleanup = () => {
+      setActiveEntity(null);
+      setActiveEntitySwatch(null);
+    };
+
+    if (!overId || !isValidDropTarget) {
+      if (isEntityDrag && activeEntity) {
+        const { entityId } = active.data.current as { entityId: string };
+        const { rows: newRows } = removeEntity(
+          [...formStructure.rows],
+          entityId,
+        );
+        setFormStructure({
+          ...formStructure,
+          rows: newRows.filter((r) => r.entities.length > 0),
+        });
+        deregisterEntity(entityId);
+      }
+      return cleanup();
+    }
+
+    if (
+      isEntityDrag &&
+      (overId.startsWith("left") || overId.startsWith("right")) &&
+      over?.data.current?.entityId === active.data.current?.entityId
+    ) {
+      return cleanup();
+    }
 
     let newRows = [...formStructure.rows];
     let entityToInsert: EntityStructure | null = null;
 
-    if (activeId.startsWith("swatch") && activeEntitySwatch) {
+    if (isSwatchDrag && activeEntitySwatch) {
       entityToInsert = createNewEntity();
       registerEntity(
         entityToInsert.id,
         entityRegistry.current[activeEntitySwatch.name].definition,
       );
-    } else if (activeId.startsWith("entity")) {
+    } else if (isEntityDrag) {
       const { entityId } = active.data.current as { entityId: string };
       const removed = removeEntity(newRows, entityId);
       newRows = removed.rows;
@@ -253,30 +292,18 @@ function FormEditorContainer() {
 
     if (!entityToInsert) return;
 
-    if (overId.startsWith("top")) {
-      const targetRowId = over?.data.current?.rowId;
-      const rowIndex = newRows.findIndex((r) => r.id === targetRowId);
-      if (rowIndex !== -1) {
-        newRows.splice(rowIndex, 0, createNewRow([entityToInsert]));
-      }
-    } else if (overId.startsWith("bottom")) {
-      const targetRowId = over?.data.current?.rowId;
-      const rowIndex = newRows.findIndex((r) => r.id === targetRowId);
-      if (rowIndex !== -1) {
-        newRows.splice(rowIndex + 1, 0, createNewRow([entityToInsert]));
-      }
-    } else if (overId.startsWith("left")) {
-      const targetRowId = over?.data.current?.rowId;
-      const targetEntityId = over?.data.current?.entityId;
+    const targetRowId = over?.data.current?.rowId;
+    const targetEntityId = over?.data.current?.entityId;
+    const rowIndex = targetRowId
+      ? newRows.findIndex((r) => r.id === targetRowId)
+      : -1;
 
-      if (
-        activeId.startsWith("entity") &&
-        targetEntityId === active.data.current?.entityId
-      ) {
-        return;
+    if (overId.startsWith("top") || overId.startsWith("bottom")) {
+      if (rowIndex !== -1) {
+        const insertAt = overId.startsWith("top") ? rowIndex : rowIndex + 1;
+        newRows.splice(insertAt, 0, createNewRow([entityToInsert]));
       }
-
-      const rowIndex = newRows.findIndex((r) => r.id === targetRowId);
+    } else if (overId.startsWith("left") || overId.startsWith("right")) {
       if (rowIndex !== -1) {
         const row = newRows[rowIndex];
         const entityIndex = row.entities.findIndex(
@@ -284,36 +311,14 @@ function FormEditorContainer() {
         );
         if (entityIndex !== -1) {
           const newEntities = [...row.entities];
-          newEntities.splice(entityIndex, 0, entityToInsert);
-          newRows[rowIndex] = { ...row, entities: newEntities };
-        }
-      }
-    } else if (overId.startsWith("right")) {
-      const targetRowId = over?.data.current?.rowId;
-      const targetEntityId = over?.data.current?.entityId;
-
-      if (
-        activeId.startsWith("entity") &&
-        targetEntityId === active.data.current?.entityId
-      ) {
-        return;
-      }
-
-      const rowIndex = newRows.findIndex((r) => r.id === targetRowId);
-      if (rowIndex !== -1) {
-        const row = newRows[rowIndex];
-        const entityIndex = row.entities.findIndex(
-          (e) => e.id === targetEntityId,
-        );
-        if (entityIndex !== -1) {
-          const newEntities = [...row.entities];
-          newEntities.splice(entityIndex + 1, 0, entityToInsert);
+          const insertAt = overId.startsWith("left")
+            ? entityIndex
+            : entityIndex + 1;
+          newEntities.splice(insertAt, 0, entityToInsert);
           newRows[rowIndex] = { ...row, entities: newEntities };
         }
       }
     } else if (overId.startsWith("row")) {
-      const targetRowId = over?.data.current?.rowId;
-      const rowIndex = newRows.findIndex((r) => r.id === targetRowId);
       if (rowIndex !== -1) {
         const row = newRows[rowIndex];
         newRows[rowIndex] = {
@@ -323,19 +328,14 @@ function FormEditorContainer() {
       }
     } else if (overId === "form") {
       newRows.push(createNewRow([entityToInsert]));
-    } else {
-      deregisterEntity(entityToInsert.id);
     }
-
-    newRows = newRows.filter((r) => r.entities.length > 0);
 
     setFormStructure({
       ...formStructure,
-      rows: newRows,
+      rows: newRows.filter((r) => r.entities.length > 0),
     });
 
-    setActiveEntity(null);
-    setActiveEntitySwatch(null);
+    cleanup();
   };
 
   return (
