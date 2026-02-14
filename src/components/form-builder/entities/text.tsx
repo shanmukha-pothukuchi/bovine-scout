@@ -15,7 +15,7 @@ export const textEntity = makeEntity({
     placeholder: placeholderAttr,
     required: requiredAttr,
   },
-  defaultValue: "",
+  defaultValue: { type: "literal", value: "" },
   validate: (value, { required }) => {
     const base = z.string();
     const schema = required ? base.nonempty() : base;

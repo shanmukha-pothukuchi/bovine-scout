@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { makeAttribute, makeEntity } from "@/lib/form-builder";
 import { SlidersHorizontalIcon } from "@phosphor-icons/react";
-import { useEffect } from "react";
 import { z } from "zod";
 
 export const sliderEntity = makeEntity({
@@ -89,24 +88,20 @@ export const sliderEntity = makeEntity({
       },
     }),
   },
-  defaultValue: 0,
+  defaultValue: { type: "attribute", value: "defaultValue" },
   validate: (value: number) => {
     const schema = z.number();
     return schema.parse(value);
   },
   component: ({ attributes, value, setValue, disabled }) => {
-    const { label, min, max, defaultValue } = attributes;
-
-    useEffect(() => {
-      setValue(defaultValue);
-    }, [defaultValue]);
+    const { label, min, max } = attributes;
 
     return (
       <div className="w-full space-y-2">
-        <Label>{label}</Label>
+        {label && <Label>{label}</Label>}
 
         <Slider
-          value={[value ?? defaultValue ?? 0]}
+          value={[value ?? 0]}
           onValueChange={(val) => setValue(val as number)}
           min={min}
           max={max}

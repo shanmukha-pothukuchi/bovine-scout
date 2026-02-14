@@ -11,7 +11,7 @@ import { ZodError } from "zod";
 
 export interface EntityRegistryEntry<
   TName extends string,
-  TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+  TAttributes extends Record<string, AttributeRegistryEntry<string, any>>,
   TValue,
 > {
   readonly definition: Entity<TName, TAttributes, TValue>;
@@ -23,6 +23,10 @@ export interface AttributeRegistryEntry<TName extends string, TValue> {
   readonly wrapper: React.ComponentType<AttributeWrapperProps>;
 }
 
+export type AnyAttributeEntry = AttributeRegistryEntry<string, any>;
+
+export type AnyEntityEntry = EntityRegistryEntry<string, any, any>;
+
 function getErrorMessage(error: unknown): string {
   if (typeof error === "string") return error;
   if (error instanceof ZodError) {
@@ -32,11 +36,39 @@ function getErrorMessage(error: unknown): string {
   return "An unexpected validation error occurred";
 }
 
-export type AttributeValues<
-  T extends Record<string, AttributeRegistryEntry<any, any>>,
-> = {
+export type AttributeValues<T extends Record<string, AnyAttributeEntry>> = {
   [K in keyof T]: T[K]["definition"]["defaultValue"];
 };
+
+export type EntityDefaultValue<
+  TValue,
+  TAttributes extends Record<string, AnyAttributeEntry>,
+> =
+  | { type: "literal"; value: TValue }
+  | { type: "attribute"; value: keyof TAttributes & string };
+
+function resolveEntityDefaultValue<
+  TValue,
+  TAttributes extends Record<string, AnyAttributeEntry>,
+>(
+  defaultValue: EntityDefaultValue<TValue, TAttributes>,
+  attributeStates: Record<string, AttributeStateData>,
+  attributeDefinitions: TAttributes,
+): TValue {
+  if (defaultValue.type === "literal") {
+    return defaultValue.value;
+  }
+  const attrKey = defaultValue.value;
+  const attrState = attributeStates[attrKey];
+  if (attrState) {
+    return attrState.value as TValue;
+  }
+  const attrEntry = attributeDefinitions[attrKey];
+  if (attrEntry) {
+    return attrEntry.definition.defaultValue as TValue;
+  }
+  return undefined as unknown as TValue;
+}
 
 export interface Attribute<TName extends string, TValue> {
   name: TName;
@@ -49,13 +81,13 @@ export interface Attribute<TName extends string, TValue> {
 
 export interface Entity<
   TName extends string,
-  TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+  TAttributes extends Record<string, AnyAttributeEntry>,
   TValue,
 > {
   name: TName;
   icon: React.ComponentType<{ size?: number | string }>;
   attributes: TAttributes;
-  defaultValue: TValue;
+  defaultValue: EntityDefaultValue<TValue, TAttributes>;
   validate: (
     value: TValue,
     attributes: AttributeValues<TAttributes>,
@@ -73,7 +105,7 @@ export interface AttributeComponentProps<TValue = unknown> {
 }
 
 export interface EntityComponentProps<
-  TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+  TAttributes extends Record<string, AnyAttributeEntry>,
   TValue = unknown,
 > {
   attributes: AttributeValues<TAttributes>;
@@ -104,15 +136,11 @@ interface FormState {
 
 interface FormContextValue {
   state: FormState;
-  entityRegistry: React.RefObject<
-    Record<string, EntityRegistryEntry<any, any, any>>
-  >;
-  attributeRegistry: React.RefObject<
-    Record<string, AttributeRegistryEntry<any, any>>
-  >;
+  entityRegistry: React.RefObject<Record<string, AnyEntityEntry>>;
+  attributeRegistry: React.RefObject<Record<string, AnyAttributeEntry>>;
   registerEntity: <
     TName extends string,
-    TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+    TAttributes extends Record<string, AnyAttributeEntry>,
     TValue,
   >(
     entityId: string,
@@ -166,7 +194,7 @@ export function FormProvider({
 }: {
   children: React.ReactNode;
   initialState?: FormState;
-  entities?: EntityRegistryEntry<any, any, any>[];
+  entities?: AnyEntityEntry[];
 }) {
   const [state, setState] = useState<FormState>(initialState);
 
@@ -175,26 +203,19 @@ export function FormProvider({
     stateRef.current = state;
   }, [state]);
 
-  const entityRegistry = useRef<
-    Record<string, EntityRegistryEntry<any, any, any>>
-  >({});
-  const attributeRegistry = useRef<
-    Record<string, AttributeRegistryEntry<any, any>>
-  >({});
+  const entityRegistry = useRef<Record<string, AnyEntityEntry>>({});
+  const attributeRegistry = useRef<Record<string, AnyAttributeEntry>>({});
 
   useEffect(() => {
     entities.forEach((entityEntry) => {
       const entityDef = entityEntry.definition;
       entityRegistry.current[entityDef.name] = entityEntry;
 
-      (
-        Object.values(entityDef.attributes) as AttributeRegistryEntry<
-          any,
-          any
-        >[]
-      ).forEach((attrEntry) => {
-        attributeRegistry.current[attrEntry.definition.name] = attrEntry;
-      });
+      (Object.values(entityDef.attributes) as AnyAttributeEntry[]).forEach(
+        (attrEntry) => {
+          attributeRegistry.current[attrEntry.definition.name] = attrEntry;
+        },
+      );
     });
   }, [entities]);
 
@@ -234,7 +255,11 @@ export function FormProvider({
         }
         nextState[entityId] = {
           ...entityState,
-          value: entry.definition.defaultValue,
+          value: resolveEntityDefaultValue(
+            entry.definition.defaultValue,
+            entityState.attributes,
+            entry.definition.attributes,
+          ),
           error: null,
         };
       }
@@ -245,7 +270,7 @@ export function FormProvider({
   const registerEntity = useCallback(
     <
       TName extends string,
-      TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+      TAttributes extends Record<string, AnyAttributeEntry>,
       TValue,
     >(
       entityId: string,
@@ -257,10 +282,7 @@ export function FormProvider({
         const attributeStates: Record<string, AttributeStateData> = {};
 
         (
-          Object.entries(entity.attributes) as [
-            string,
-            AttributeRegistryEntry<any, any>,
-          ][]
+          Object.entries(entity.attributes) as [string, AnyAttributeEntry][]
         ).forEach(([attrName, attrEntry]) => {
           const attr = attrEntry.definition;
           attributeStates[attrName] = {
@@ -274,7 +296,11 @@ export function FormProvider({
           ...prev,
           [entityId]: {
             name: entity.name,
-            value: entity.defaultValue,
+            value: resolveEntityDefaultValue(
+              entity.defaultValue,
+              attributeStates,
+              entity.attributes,
+            ),
             error: null,
             attributes: attributeStates,
           },
@@ -349,15 +375,27 @@ export function FormProvider({
         if (!entity) return prev;
         const attr = entity.attributes[attributeName];
         if (!attr) return prev;
+
+        const updatedEntity = {
+          ...entity,
+          attributes: {
+            ...entity.attributes,
+            [attributeName]: { ...attr, value },
+          },
+        };
+
+        const entityEntry = entityRegistry.current[entity.name];
+        if (
+          entityEntry &&
+          entityEntry.definition.defaultValue.type === "attribute" &&
+          entityEntry.definition.defaultValue.value === attributeName
+        ) {
+          updatedEntity.value = value;
+        }
+
         return {
           ...prev,
-          [entityId]: {
-            ...entity,
-            attributes: {
-              ...entity.attributes,
-              [attributeName]: { ...attr, value },
-            },
-          },
+          [entityId]: updatedEntity,
         };
       });
     },
@@ -398,9 +436,7 @@ export function FormProvider({
       if (!entityEntry) return;
 
       const attributeEntry = (
-        Object.values(
-          entityEntry.definition.attributes,
-        ) as AttributeRegistryEntry<any, any>[]
+        Object.values(entityEntry.definition.attributes) as AnyAttributeEntry[]
       ).find((attrEntry) => attrEntry.definition.name === attributeName);
 
       if (!attributeEntry) return;
@@ -557,7 +593,7 @@ interface EntityWrapperProps {
 
 export function makeEntity<
   const TName extends string,
-  const TAttributes extends Record<string, AttributeRegistryEntry<any, any>>,
+  const TAttributes extends Record<string, AnyAttributeEntry>,
   TValue,
 >(
   options: Entity<TName, TAttributes, TValue>,
@@ -583,7 +619,8 @@ export function makeEntity<
       const attrEntry = options.attributes[key];
       const attr = attrEntry.definition;
       const state = entityState.attributes[attr.name];
-      (attributesProp as any)[key] = state?.value ?? attr.defaultValue;
+      (attributesProp as Record<string, unknown>)[key] =
+        state?.value ?? attr.defaultValue;
     }
 
     const setValue = useCallback(
@@ -605,7 +642,14 @@ export function makeEntity<
       <EntityContext.Provider value={{ entityId }}>
         <options.component
           attributes={attributesProp}
-          value={(entityState.value as TValue) ?? options.defaultValue}
+          value={
+            (entityState.value as TValue) ??
+            resolveEntityDefaultValue(
+              options.defaultValue,
+              entityState.attributes,
+              options.attributes,
+            )
+          }
           setValue={setValue}
           validateValue={validateValue}
           error={entityState.error}

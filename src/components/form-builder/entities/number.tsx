@@ -13,7 +13,7 @@ export const numberEntity = makeEntity({
     label: labelAttr,
     placeholder: placeholderAttr,
   },
-  defaultValue: 0,
+  defaultValue: { type: "literal", value: 0 },
   validate: (value: number) => {
     const schema = z.number();
     return schema.parse(value);
