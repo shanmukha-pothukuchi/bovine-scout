@@ -7,7 +7,19 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ZodError } from "zod";
+
+export type ErrorSerializer = (error: unknown) => string;
+
+const defaultErrorSerializer: ErrorSerializer = (error) => {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  return "An unexpected validation error occurred";
+};
+
+export interface AttributeRegistryEntry<TName extends string, TValue> {
+  readonly definition: Attribute<TName, TValue>;
+  readonly wrapper: React.ComponentType<AttributeWrapperProps>;
+}
 
 export interface EntityRegistryEntry<
   TName extends string,
@@ -18,23 +30,8 @@ export interface EntityRegistryEntry<
   readonly wrapper: React.ComponentType<EntityWrapperProps>;
 }
 
-export interface AttributeRegistryEntry<TName extends string, TValue> {
-  readonly definition: Attribute<TName, TValue>;
-  readonly wrapper: React.ComponentType<AttributeWrapperProps>;
-}
-
 export type AnyAttributeEntry = AttributeRegistryEntry<string, any>;
-
 export type AnyEntityEntry = EntityRegistryEntry<string, any, any>;
-
-function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") return error;
-  if (error instanceof ZodError) {
-    return error.issues.map((issue) => issue.message).join(", ");
-  }
-  if (error instanceof Error) return error.message;
-  return "An unexpected validation error occurred";
-}
 
 export type AttributeValues<T extends Record<string, AnyAttributeEntry>> = {
   [K in keyof T]: T[K]["definition"]["defaultValue"];
@@ -46,29 +43,6 @@ export type EntityDefaultValue<
 > =
   | { type: "literal"; value: TValue }
   | { type: "attribute"; value: keyof TAttributes & string };
-
-function resolveEntityDefaultValue<
-  TValue,
-  TAttributes extends Record<string, AnyAttributeEntry>,
->(
-  defaultValue: EntityDefaultValue<TValue, TAttributes>,
-  attributeStates: Record<string, AttributeStateData>,
-  attributeDefinitions: TAttributes,
-): TValue {
-  if (defaultValue.type === "literal") {
-    return defaultValue.value;
-  }
-  const attrKey = defaultValue.value;
-  const attrState = attributeStates[attrKey];
-  if (attrState) {
-    return attrState.value as TValue;
-  }
-  const attrEntry = attributeDefinitions[attrKey];
-  if (attrEntry) {
-    return attrEntry.definition.defaultValue as TValue;
-  }
-  return undefined as unknown as TValue;
-}
 
 export interface Attribute<TName extends string, TValue> {
   name: TName;
@@ -134,6 +108,32 @@ interface FormState {
   [entityId: string]: EntityStateData;
 }
 
+function resolveEntityDefaultValue<
+  TValue,
+  TAttributes extends Record<string, AnyAttributeEntry>,
+>(
+  defaultValue: EntityDefaultValue<TValue, TAttributes>,
+  attributeStates: Record<string, AttributeStateData>,
+  attributeDefinitions: TAttributes,
+): TValue {
+  if (defaultValue.type === "literal") {
+    return defaultValue.value;
+  }
+
+  const attrKey = defaultValue.value;
+
+  const attrState = attributeStates[attrKey];
+  if (attrState !== undefined) return attrState.value as TValue;
+
+  const attrEntry = attributeDefinitions[attrKey];
+  if (attrEntry !== undefined)
+    return attrEntry.definition.defaultValue as TValue;
+
+  throw new Error(
+    `resolveEntityDefaultValue: attribute key "${String(attrKey)}" not found in attribute definitions`,
+  );
+}
+
 interface FormContextValue {
   state: FormState;
   entityRegistry: React.RefObject<Record<string, AnyEntityEntry>>;
@@ -166,6 +166,7 @@ interface FormContextValue {
   getValues: () => Record<string, unknown>;
   resetValues: () => void;
   isValid: boolean;
+  errorSerializer: ErrorSerializer;
 }
 
 const FormContext = createContext<FormContextValue | null>(null);
@@ -191,22 +192,24 @@ export function FormProvider({
   children,
   initialState = {},
   entities = [],
+  errorSerializer = defaultErrorSerializer,
 }: {
   children: React.ReactNode;
   initialState?: FormState;
   entities?: AnyEntityEntry[];
+  errorSerializer?: ErrorSerializer;
 }) {
   const [state, setState] = useState<FormState>(initialState);
 
   const stateRef = useRef<FormState>(state);
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   const entityRegistry = useRef<Record<string, AnyEntityEntry>>({});
   const attributeRegistry = useRef<Record<string, AnyAttributeEntry>>({});
 
   useEffect(() => {
+    entityRegistry.current = {};
+    attributeRegistry.current = {};
+
     entities.forEach((entityEntry) => {
       const entityDef = entityEntry.definition;
       entityRegistry.current[entityDef.name] = entityEntry;
@@ -219,30 +222,33 @@ export function FormProvider({
     });
   }, [entities]);
 
-  const isValid = useMemo(() => {
-    for (const entityState of Object.values(state)) {
-      if (entityState.error) return false;
-      for (const attrState of Object.values(entityState.attributes)) {
-        if (attrState.error) return false;
-      }
-    }
-    return true;
-  }, [state]);
+  const errorCountRef = useRef(0);
+  const [isValid, setIsValid] = useState(true);
+
+  const updateErrorCount = useCallback((delta: number) => {
+    errorCountRef.current = Math.max(0, errorCountRef.current + delta);
+    setIsValid(errorCountRef.current === 0);
+  }, []);
+
+  const errorSerializerRef = useRef(errorSerializer);
+  useEffect(() => {
+    errorSerializerRef.current = errorSerializer;
+  }, [errorSerializer]);
 
   const getEntityState = useCallback(
-    (entityId: string) => {
-      return state[entityId];
+    (entityId: string): EntityStateData | undefined => {
+      return stateRef.current[entityId];
     },
-    [state],
+    [],
   );
 
   const getValues = useCallback((): Record<string, unknown> => {
     const values: Record<string, unknown> = {};
-    for (const [entityId, entityState] of Object.entries(state)) {
+    for (const [entityId, entityState] of Object.entries(stateRef.current)) {
       values[entityId] = entityState.value;
     }
     return values;
-  }, [state]);
+  }, []);
 
   const resetValues = useCallback(() => {
     setState((prev) => {
@@ -263,6 +269,7 @@ export function FormProvider({
           error: null,
         };
       }
+      stateRef.current = nextState;
       return nextState;
     });
   }, []);
@@ -280,7 +287,6 @@ export function FormProvider({
         if (prev[entityId]) return prev;
 
         const attributeStates: Record<string, AttributeStateData> = {};
-
         (
           Object.entries(entity.attributes) as [string, AnyAttributeEntry][]
         ).forEach(([attrName, attrEntry]) => {
@@ -292,7 +298,7 @@ export function FormProvider({
           };
         });
 
-        return {
+        const next = {
           ...prev,
           [entityId]: {
             name: entity.name,
@@ -305,6 +311,8 @@ export function FormProvider({
             attributes: attributeStates,
           },
         };
+        stateRef.current = next;
+        return next;
       });
     },
     [],
@@ -313,7 +321,21 @@ export function FormProvider({
   const deregisterEntity = useCallback((entityId: string) => {
     setState((prev) => {
       if (!prev[entityId]) return prev;
-      const { [entityId]: _, ...rest } = prev;
+      const { [entityId]: removed, ...rest } = prev;
+
+      let removedErrors = removed.error ? 1 : 0;
+      for (const attr of Object.values(removed.attributes)) {
+        if (attr.error) removedErrors++;
+      }
+      if (removedErrors > 0) {
+        errorCountRef.current = Math.max(
+          0,
+          errorCountRef.current - removedErrors,
+        );
+        setIsValid(errorCountRef.current === 0);
+      }
+
+      stateRef.current = rest;
       return rest;
     });
   }, []);
@@ -322,7 +344,9 @@ export function FormProvider({
     setState((prev) => {
       const entity = prev[entityId];
       if (!entity) return prev;
-      return { ...prev, [entityId]: { ...entity, value } };
+      const next = { ...prev, [entityId]: { ...entity, value } };
+      stateRef.current = next;
+      return next;
     });
   }, []);
 
@@ -331,41 +355,15 @@ export function FormProvider({
       setState((prev) => {
         const entity = prev[entityId];
         if (!entity) return prev;
-        return { ...prev, [entityId]: { ...entity, error } };
+        const hadError = !!entity.error;
+        const hasError = !!error;
+        if (hadError !== hasError) updateErrorCount(hasError ? 1 : -1);
+        const next = { ...prev, [entityId]: { ...entity, error } };
+        stateRef.current = next;
+        return next;
       });
     },
-    [],
-  );
-
-  const validateEntity = useCallback(
-    async (entityId: string) => {
-      const currentState = stateRef.current[entityId];
-      if (!currentState) return;
-
-      const currentValue = currentState.value;
-      const entityName = currentState.name;
-
-      const attributeValues: Record<string, unknown> = {};
-      for (const [name, attrState] of Object.entries(currentState.attributes)) {
-        attributeValues[name] = attrState.value;
-      }
-
-      const entityEntry = entityRegistry.current[entityName];
-      if (!entityEntry) return;
-
-      try {
-        await entityEntry.definition.validate(
-          currentValue,
-          attributeValues as AttributeValues<
-            typeof entityEntry.definition.attributes
-          >,
-        );
-        setEntityError(entityId, null);
-      } catch (error) {
-        setEntityError(entityId, getErrorMessage(error));
-      }
-    },
-    [setEntityError],
+    [updateErrorCount],
   );
 
   const setAttributeValue = useCallback(
@@ -376,7 +374,7 @@ export function FormProvider({
         const attr = entity.attributes[attributeName];
         if (!attr) return prev;
 
-        const updatedEntity = {
+        const updatedEntity: EntityStateData = {
           ...entity,
           attributes: {
             ...entity.attributes,
@@ -393,10 +391,9 @@ export function FormProvider({
           updatedEntity.value = value;
         }
 
-        return {
-          ...prev,
-          [entityId]: updatedEntity,
-        };
+        const next = { ...prev, [entityId]: updatedEntity };
+        stateRef.current = next;
+        return next;
       });
     },
     [],
@@ -409,7 +406,10 @@ export function FormProvider({
         if (!entity) return prev;
         const attr = entity.attributes[attributeName];
         if (!attr) return prev;
-        return {
+        const hadError = !!attr.error;
+        const hasError = !!error;
+        if (hadError !== hasError) updateErrorCount(hasError ? 1 : -1);
+        const next = {
           ...prev,
           [entityId]: {
             ...entity,
@@ -419,33 +419,66 @@ export function FormProvider({
             },
           },
         };
+        stateRef.current = next;
+        return next;
       });
     },
-    [],
+    [updateErrorCount],
   );
 
-  const validateAttribute = useCallback(
-    async (entityId: string, attributeName: string) => {
+  const validateEntity = useCallback(
+    async (entityId: string): Promise<void> => {
       const currentState = stateRef.current[entityId];
       if (!currentState) return;
 
-      const currentValue = currentState.attributes[attributeName]?.value;
-      const entityName = currentState.name;
+      const entityEntry = entityRegistry.current[currentState.name];
+      if (!entityEntry) return;
 
-      const entityEntry = entityRegistry.current[entityName];
+      const attributeValues: Record<string, unknown> = {};
+      for (const [name, attrState] of Object.entries(currentState.attributes)) {
+        attributeValues[name] = attrState.value;
+      }
+
+      try {
+        await entityEntry.definition.validate(
+          currentState.value,
+          attributeValues as AttributeValues<
+            typeof entityEntry.definition.attributes
+          >,
+        );
+        setEntityError(entityId, null);
+      } catch (error) {
+        setEntityError(entityId, errorSerializerRef.current(error));
+      }
+    },
+    [setEntityError],
+  );
+
+  const validateAttribute = useCallback(
+    async (entityId: string, attributeName: string): Promise<void> => {
+      const currentState = stateRef.current[entityId];
+      if (!currentState) return;
+
+      const entityEntry = entityRegistry.current[currentState.name];
       if (!entityEntry) return;
 
       const attributeEntry = (
         Object.values(entityEntry.definition.attributes) as AnyAttributeEntry[]
-      ).find((attrEntry) => attrEntry.definition.name === attributeName);
+      ).find((e) => e.definition.name === attributeName);
 
       if (!attributeEntry) return;
+
+      const currentValue = currentState.attributes[attributeName]?.value;
 
       try {
         await attributeEntry.definition.validate(currentValue);
         setAttributeError(entityId, attributeName, null);
       } catch (error) {
-        setAttributeError(entityId, attributeName, getErrorMessage(error));
+        setAttributeError(
+          entityId,
+          attributeName,
+          errorSerializerRef.current(error),
+        );
       }
     },
     [setAttributeError],
@@ -453,32 +486,72 @@ export function FormProvider({
 
   const validateAll = useCallback(async (): Promise<boolean> => {
     const currentState = stateRef.current;
-    const entityIds = Object.keys(currentState);
 
-    const promises: Promise<void>[] = [];
+    const results = await Promise.all(
+      Object.keys(currentState).flatMap((entityId) => {
+        const entityState = currentState[entityId];
+        const entityEntry = entityRegistry.current[entityState.name];
 
-    for (const entityId of entityIds) {
-      promises.push(validateEntity(entityId));
+        const entityPromise = entityEntry
+          ? entityEntry.definition
+              .validate(
+                entityState.value,
+                Object.fromEntries(
+                  Object.entries(entityState.attributes).map(([k, v]) => [
+                    k,
+                    v.value,
+                  ]),
+                ) as AttributeValues<typeof entityEntry.definition.attributes>,
+              )
+              .then(() => null)
+              .catch((e: unknown) => ({
+                type: "entity" as const,
+                entityId,
+                error: errorSerializerRef.current(e),
+              }))
+          : Promise.resolve(null);
 
-      const entityState = currentState[entityId];
-      if (entityState) {
-        for (const attrName of Object.keys(entityState.attributes)) {
-          promises.push(validateAttribute(entityId, attrName));
-        }
+        const attrPromises = Object.keys(entityState.attributes).map(
+          (attrName) => {
+            const attrEntry = entityEntry
+              ? (
+                  Object.values(
+                    entityEntry.definition.attributes,
+                  ) as AnyAttributeEntry[]
+                ).find((e) => e.definition.name === attrName)
+              : undefined;
+
+            if (!attrEntry) return Promise.resolve(null);
+
+            return attrEntry.definition
+              .validate(entityState.attributes[attrName].value)
+              .then(() => null)
+              .catch((e: unknown) => ({
+                type: "attribute" as const,
+                entityId,
+                attrName,
+                error: errorSerializerRef.current(e),
+              }));
+          },
+        );
+
+        return [entityPromise, ...attrPromises];
+      }),
+    );
+
+    let hasErrors = false;
+    for (const result of results) {
+      if (!result) continue;
+      hasErrors = true;
+      if (result.type === "entity") {
+        setEntityError(result.entityId, result.error);
+      } else {
+        setAttributeError(result.entityId, result.attrName, result.error);
       }
     }
 
-    await Promise.all(promises);
-
-    const finalState = stateRef.current;
-    for (const entityState of Object.values(finalState)) {
-      if (entityState.error) return false;
-      for (const attrState of Object.values(entityState.attributes)) {
-        if (attrState.error) return false;
-      }
-    }
-    return true;
-  }, [validateEntity, validateAttribute]);
+    return !hasErrors;
+  }, [setEntityError, setAttributeError]);
 
   const contextValue = useMemo(
     () => ({
@@ -498,6 +571,7 @@ export function FormProvider({
       getValues,
       resetValues,
       isValid,
+      errorSerializer,
     }),
     [
       state,
@@ -514,6 +588,7 @@ export function FormProvider({
       getValues,
       resetValues,
       isValid,
+      errorSerializer,
     ],
   );
 
@@ -530,37 +605,47 @@ interface AttributeWrapperProps {
 export function makeAttribute<const TName extends string, TValue>(
   options: Attribute<TName, TValue>,
 ): AttributeRegistryEntry<TName, TValue> {
-  function AttributeWrapper(props: AttributeWrapperProps) {
+  function AttributeWrapper({
+    entityId,
+    defaultAttributeState,
+  }: AttributeWrapperProps) {
     const formContext = useFormContext();
     const entityContext = useEntityContext();
-    const entityId = props.entityId ?? entityContext?.entityId;
+    const resolvedEntityId = entityId ?? entityContext?.entityId;
+
+    if (!resolvedEntityId) {
+      throw new Error(
+        `Attribute "${options.name}" rendered without an entityId. ` +
+          "Either pass entityId directly or render inside an EntityWrapper.",
+      );
+    }
 
     const setValue = useCallback(
       (value: TValue) => {
-        if (entityId) {
-          formContext.setAttributeValue(entityId, options.name, value);
+        if (resolvedEntityId) {
+          formContext.setAttributeValue(resolvedEntityId, options.name, value);
         }
       },
-      [formContext, entityId],
+      [formContext, resolvedEntityId],
     );
 
     const validateValue = useCallback(async () => {
-      if (entityId) {
-        await formContext.validateAttribute(entityId, options.name);
+      if (resolvedEntityId) {
+        await formContext.validateAttribute(resolvedEntityId, options.name);
       }
-    }, [formContext, entityId]);
+    }, [formContext, resolvedEntityId]);
 
     const resetError = useCallback(() => {
-      if (entityId) {
-        formContext.setAttributeError(entityId, options.name, null);
+      if (resolvedEntityId) {
+        formContext.setAttributeError(resolvedEntityId, options.name, null);
       }
-    }, [formContext, entityId]);
+    }, [formContext, resolvedEntityId]);
 
-    if (!entityId) return null;
+    if (!resolvedEntityId) return null;
 
-    const entityState = formContext.getEntityState(entityId);
+    const entityState = formContext.getEntityState(resolvedEntityId);
     const attributeState =
-      entityState?.attributes[options.name] ?? props.defaultAttributeState;
+      entityState?.attributes[options.name] ?? defaultAttributeState;
 
     if (!attributeState) return null;
 
@@ -577,12 +662,7 @@ export function makeAttribute<const TName extends string, TValue>(
     );
   }
 
-  const registryEntry: AttributeRegistryEntry<TName, TValue> = {
-    definition: options,
-    wrapper: AttributeWrapper,
-  };
-
-  return registryEntry;
+  return { definition: options, wrapper: AttributeWrapper };
 }
 
 interface EntityWrapperProps {
@@ -607,21 +687,20 @@ export function makeEntity<
 
     useEffect(() => {
       formContext.registerEntity(entityId, options);
-    }, [entityId]);
+    }, [formContext, entityId]);
 
     const entityState =
       formContext.getEntityState(entityId) ?? defaultEntityState;
 
     if (!entityState) return null;
 
-    const attributesProp = {} as AttributeValues<TAttributes>;
-    for (const key in options.attributes) {
-      const attrEntry = options.attributes[key];
-      const attr = attrEntry.definition;
-      const state = entityState.attributes[attr.name];
-      (attributesProp as Record<string, unknown>)[key] =
-        state?.value ?? attr.defaultValue;
-    }
+    const attributesProp = Object.fromEntries(
+      Object.entries(options.attributes).map(([key, attrEntry]) => {
+        const attr = (attrEntry as AnyAttributeEntry).definition;
+        const attrState = entityState.attributes[attr.name];
+        return [key, attrState?.value ?? attr.defaultValue];
+      }),
+    ) as AttributeValues<TAttributes>;
 
     const setValue = useCallback(
       (newValue: TValue) => {
@@ -638,18 +717,19 @@ export function makeEntity<
       formContext.setEntityError(entityId, null);
     }, [formContext, entityId]);
 
+    const resolvedValue =
+      (entityState.value as TValue) ??
+      resolveEntityDefaultValue(
+        options.defaultValue,
+        entityState.attributes,
+        options.attributes,
+      );
+
     return (
       <EntityContext.Provider value={{ entityId }}>
         <options.component
           attributes={attributesProp}
-          value={
-            (entityState.value as TValue) ??
-            resolveEntityDefaultValue(
-              options.defaultValue,
-              entityState.attributes,
-              options.attributes,
-            )
-          }
+          value={resolvedValue}
           setValue={setValue}
           validateValue={validateValue}
           error={entityState.error}
@@ -660,10 +740,5 @@ export function makeEntity<
     );
   }
 
-  const registryEntry: EntityRegistryEntry<TName, TAttributes, TValue> = {
-    definition: options,
-    wrapper: EntityWrapper,
-  };
-
-  return registryEntry;
+  return { definition: options, wrapper: EntityWrapper };
 }

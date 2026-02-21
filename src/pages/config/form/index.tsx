@@ -45,10 +45,14 @@ function FormEditor({
   form,
   isPreview,
   onPreviewToggle,
+  selected,
+  setSelected,
 }: {
   form: FormStructure;
   isPreview: boolean;
   onPreviewToggle: () => void;
+  selected: string | null;
+  setSelected: (id: string | null) => void;
 }) {
   const { state, getEntityState, attributeRegistry } = useFormContext();
 
@@ -58,8 +62,6 @@ function FormEditor({
     id: "form",
     disabled: isDragDisabled,
   });
-
-  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <div className="h-full flex">
@@ -160,6 +162,7 @@ function FormEditorContainer() {
     useFormContext();
 
   const [isPreview, setIsPreview] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const handlePreviewToggle = () => {
     if (isPreview) resetValues();
@@ -262,7 +265,9 @@ function FormEditorContainer() {
           rows: newRows.filter((r) => r.entities.length > 0),
         });
         deregisterEntity(entityId);
+        setSelected(null);
       }
+
       return cleanup();
     }
 
@@ -349,6 +354,8 @@ function FormEditorContainer() {
         form={formStructure}
         isPreview={isPreview}
         onPreviewToggle={handlePreviewToggle}
+        selected={selected}
+        setSelected={setSelected}
       />
       {activeEntitySwatch && !isPreview && (
         <DragOverlay>
