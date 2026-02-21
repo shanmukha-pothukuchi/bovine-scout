@@ -5,7 +5,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import type { FormStructure } from "./form";
+import type { FormStructure } from "./form/types";
 
 export type MenuTreeNode = TreeNode<{
   label: string;

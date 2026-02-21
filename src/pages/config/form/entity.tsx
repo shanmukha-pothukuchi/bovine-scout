@@ -1,11 +1,8 @@
-import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useFormContext } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { ComponentType } from "react";
-
-export interface EntityStructure {
-  id: string;
-}
+import type { EntityStructure } from "./types";
 
 export function Entity({
   rowId,

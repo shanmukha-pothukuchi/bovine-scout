@@ -1,7 +1,5 @@
 import RadialMenu, { type RadialMenuNode } from "@/components/radial-menu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   findNode,
   findParent,
@@ -17,7 +14,6 @@ import {
   hasDescendant,
   indexOfChild,
   insert,
-  isLeafNode,
   remove,
   update,
 } from "@/lib/utils/tree";
@@ -31,12 +27,13 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { CaretLeftIcon, PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { MenuTreeNode } from "../context";
 import { useConfig } from "../context";
+import { MenuProperties } from "./menu-properties";
 import { Node } from "./node";
 import { TreeNode } from "./tree-node";
 
@@ -266,74 +263,13 @@ export default function MenuEditor() {
             if (!selectedNode) return null;
 
             return (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedItem(null)}
-                  >
-                    <CaretLeftIcon className="opacity-50" />
-                  </Button>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Properties
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="label">Label</Label>
-                  <Input
-                    id="label"
-                    value={selectedNode.label}
-                    onChange={(e) =>
-                      updateNodeProperty(selectedItem, "label", e.target.value)
-                    }
-                  />
-                </div>
-
-                {isLeafNode(selectedNode) && (
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select
-                      value={selectedNode.type || "instantaneous"}
-                      onValueChange={(value) =>
-                        updateNodeProperty(
-                          selectedItem,
-                          "type",
-                          value as "instantaneous" | "duration",
-                        )
-                      }
-                    >
-                      <SelectTrigger id="type">
-                        <SelectValue>
-                          {selectedNode.type === "duration"
-                            ? "Duration"
-                            : "Instantaneous"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="instantaneous">
-                          Instantaneous
-                        </SelectItem>
-                        <SelectItem value="duration">Duration</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {isLeafNode(selectedNode) && (
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="includeForm">Include Form</Label>
-                    <Switch
-                      id="includeForm"
-                      checked={selectedNode.includeForm ?? false}
-                      onCheckedChange={(checked) =>
-                        updateNodeProperty(selectedItem, "includeForm", checked)
-                      }
-                    />
-                  </div>
-                )}
-              </div>
+              <MenuProperties
+                selectedNode={selectedNode}
+                onClose={() => setSelectedItem(null)}
+                onUpdateProperty={(property, value) =>
+                  updateNodeProperty(selectedItem, property, value)
+                }
+              />
             );
           })()}
       </div>
