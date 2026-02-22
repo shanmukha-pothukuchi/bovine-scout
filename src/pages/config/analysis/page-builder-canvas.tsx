@@ -70,6 +70,7 @@ export function PageBuilderCanvas({
     setEntityRegion,
     state,
     interactionMode,
+    draftRegion,
   });
   latest.current = {
     canDrawRegions,
@@ -82,6 +83,7 @@ export function PageBuilderCanvas({
     setEntityRegion,
     state,
     interactionMode,
+    draftRegion,
   };
 
   useEffect(() => {
@@ -271,16 +273,16 @@ export function PageBuilderCanvas({
 
       setInteractionMode("idle");
 
-      setDraftRegion((draft: GridArea | null): GridArea | null => {
-        if (draft && !doesRegionCollide(draft, latest.current.regions)) {
-          const { selectedTool, registerEntity } = latest.current;
-          if (selectedTool) {
-            const id = nanoid();
-            registerEntity(id, selectedTool, draft);
-          }
+      const draft = latest.current.draftRegion;
+      if (draft && !doesRegionCollide(draft, latest.current.regions)) {
+        const { selectedTool, registerEntity } = latest.current;
+        if (selectedTool) {
+          const id = nanoid();
+          registerEntity(id, selectedTool, draft);
         }
-        return null;
-      });
+      }
+
+      setDraftRegion(null);
       setDraftCollision(false);
     };
 
