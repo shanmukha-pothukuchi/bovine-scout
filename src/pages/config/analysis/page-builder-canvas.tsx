@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   cn,
   doesRegionCollide,
+  doesRegionCollideExcluding,
   getSelectionFromPoints,
   isPointInAnyRegion,
 } from "@/lib/utils";
@@ -54,35 +55,55 @@ export function PageBuilderCanvas({
   const [cellSize, setCellSize] = useState(0);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isPointerInCanvas, setIsPointerInCanvas] = useState(false);
-  const [interactionMode, setInteractionMode] = useState<"idle" | "drawing">(
-    "idle",
-  );
+  const [dragFloat, setDragFloat] = useState<{
+    entityId: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
-  // Ref to hold latest values for event handlers
-  const latest = useRef({
+  const interactionRef = useRef<{
+    mode: "idle" | "drawing" | "dragging" | "resizing";
+    entityId: string | null;
+    originalRegion: GridArea | null;
+    startCell: GridPoint | null;
+    draftRegion: GridArea | null;
+  }>({
+    mode: "idle",
+    entityId: null,
+    originalRegion: null,
+    startCell: null,
+    draftRegion: null,
+  });
+
+  const builderRef = useRef({
     canDrawRegions,
     selectedTool,
     regions,
-    cellSize,
     rowCount,
     columnCount,
     registerEntity,
     setEntityRegion,
     state,
-    interactionMode,
+  });
+  builderRef.current = {
+    canDrawRegions,
+    selectedTool,
+    regions,
+    rowCount,
+    columnCount,
+    registerEntity,
+    setEntityRegion,
+    state,
+  };
+
+  const gridStateRef = useRef({
+    cellSize,
     draftRegion,
   });
-  latest.current = {
-    canDrawRegions,
-    selectedTool,
-    regions,
+  gridStateRef.current = {
     cellSize,
-    rowCount,
-    columnCount,
-    registerEntity,
-    setEntityRegion,
-    state,
-    interactionMode,
     draftRegion,
   };
 
@@ -108,7 +129,8 @@ export function PageBuilderCanvas({
   const getCellFromPointer = useCallback(
     (clientX: number, clientY: number): GridPoint | null => {
       const container = gridLayerRef.current;
-      const { cellSize, rowCount, columnCount } = latest.current;
+      const { rowCount, columnCount } = builderRef.current;
+      const { cellSize } = gridStateRef.current;
       if (!container || cellSize <= 0) return null;
 
       const rect = container.getBoundingClientRect();
@@ -196,7 +218,7 @@ export function PageBuilderCanvas({
         const cell = getCellFromPointer(pointer.x, pointer.y);
         if (cell) {
           if (dragState === "pending") {
-            if (isPointInAnyRegion(cell, latest.current.regions)) return;
+            if (isPointInAnyRegion(cell, builderRef.current.regions)) return;
             dragState = "dragging";
             dragStart = cell;
             setDraftRegion(getSelectionFromPoints(cell, cell));
@@ -210,19 +232,27 @@ export function PageBuilderCanvas({
     };
 
     const handleMouseDown = (event: MouseEvent) => {
-      if (latest.current.interactionMode !== "idle") return;
-      if (!latest.current.canDrawRegions) return;
+      if (interactionRef.current.mode !== "idle") return;
+      if (!builderRef.current.canDrawRegions) return;
+
+      const target = event.target as HTMLElement;
+      // Do not trigger native rectangle drawing when interacting with an existing region
+      if (target.closest("[data-grid-region]")) {
+        return;
+      }
+
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
 
       const start = getCellFromPointer(event.clientX, event.clientY);
-      if (start && isPointInAnyRegion(start, latest.current.regions)) return;
+      if (start && isPointInAnyRegion(start, builderRef.current.regions))
+        return;
 
       if (start) {
         dragState = "dragging";
         dragStart = start;
-        setInteractionMode("drawing");
+        interactionRef.current.mode = "drawing";
         setDraftRegion(getSelectionFromPoints(start, start));
       } else {
         dragState = "pending";
@@ -243,14 +273,14 @@ export function PageBuilderCanvas({
       if (!current) return;
 
       if (dragState === "pending") {
-        if (isPointInAnyRegion(current, latest.current.regions)) {
+        if (isPointInAnyRegion(current, builderRef.current.regions)) {
           dragState = "idle";
           stopAutoScroll();
           return;
         }
         dragState = "dragging";
         dragStart = current;
-        setInteractionMode("drawing");
+        interactionRef.current.mode = "drawing";
         setDraftRegion(getSelectionFromPoints(current, current));
         return;
       }
@@ -258,7 +288,9 @@ export function PageBuilderCanvas({
       if (dragStart) {
         const newDraft = getSelectionFromPoints(dragStart, current);
         setDraftRegion(newDraft);
-        setDraftCollision(doesRegionCollide(newDraft, latest.current.regions));
+        setDraftCollision(
+          doesRegionCollide(newDraft, builderRef.current.regions),
+        );
       }
     };
 
@@ -269,13 +301,13 @@ export function PageBuilderCanvas({
       stopAutoScroll();
 
       if (!wasDragging) return;
-      if (latest.current.interactionMode !== "drawing") return;
+      if (interactionRef.current.mode !== "drawing") return;
 
-      setInteractionMode("idle");
+      interactionRef.current.mode = "idle";
 
-      const draft = latest.current.draftRegion;
-      if (draft && !doesRegionCollide(draft, latest.current.regions)) {
-        const { selectedTool, registerEntity } = latest.current;
+      const draft = gridStateRef.current.draftRegion;
+      if (draft && !doesRegionCollide(draft, builderRef.current.regions)) {
+        const { selectedTool, registerEntity } = builderRef.current;
         if (selectedTool) {
           const id = nanoid();
           registerEntity(id, selectedTool, draft);
@@ -299,11 +331,250 @@ export function PageBuilderCanvas({
     };
   }, [getCellFromPointer]);
 
+  /** Get the pixel rect of a grid region relative to the scroll container */
+  const getRegionPixelRect = useCallback(
+    (region: GridArea) => {
+      const stride = cellSize + GAP;
+      const x = PADDING + (region.start.left - 1) * stride;
+      const y = PADDING + (region.start.top - 1) * stride;
+      const w = (region.end.left - region.start.left + 1) * stride - GAP;
+      const h = (region.end.top - region.start.top + 1) * stride - GAP;
+      return { x, y, width: w, height: h };
+    },
+    [cellSize, GAP, PADDING],
+  );
+
+  // ─── Manual drag handler (region floats with cursor) ───
+  const handleEntityDragStart = useCallback(
+    (entityId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      const entityState = builderRef.current.state[entityId];
+      if (!entityState) return;
+
+      interactionRef.current = {
+        ...interactionRef.current,
+        mode: "dragging",
+        entityId: entityId,
+        originalRegion: entityState.region,
+      };
+
+      const startCell = getCellFromPointer(e.clientX, e.clientY);
+      interactionRef.current.startCell = startCell;
+
+      const pixelRect = getRegionPixelRect(entityState.region);
+      const containerRect = containerRef.current?.getBoundingClientRect();
+      const scrollTop = containerRef.current?.scrollTop ?? 0;
+
+      const offsetX = e.clientX - (containerRect?.left ?? 0) - pixelRect.x;
+      const offsetY =
+        e.clientY - (containerRect?.top ?? 0) + scrollTop - pixelRect.y;
+
+      setDragFloat({
+        entityId,
+        x: e.clientX - offsetX - (containerRect?.left ?? 0),
+        y: e.clientY - offsetY - (containerRect?.top ?? 0) + scrollTop,
+        width: pixelRect.width,
+        height: pixelRect.height,
+      });
+
+      const handleMouseMove = (ev: MouseEvent) => {
+        const cRect = containerRef.current?.getBoundingClientRect();
+        const sTop = containerRef.current?.scrollTop ?? 0;
+        setDragFloat((prev) =>
+          prev
+            ? {
+                ...prev,
+                x: ev.clientX - offsetX - (cRect?.left ?? 0),
+                y: ev.clientY - offsetY - (cRect?.top ?? 0) + sTop,
+              }
+            : null,
+        );
+
+        const current = getCellFromPointer(ev.clientX, ev.clientY);
+        if (
+          !current ||
+          !interactionRef.current.startCell ||
+          !interactionRef.current.originalRegion
+        )
+          return;
+
+        const deltaRow = current.top - interactionRef.current.startCell.top;
+        const deltaCol = current.left - interactionRef.current.startCell.left;
+
+        const orig = interactionRef.current.originalRegion;
+        const regionHeight = orig.end.top - orig.start.top;
+        const regionWidth = orig.end.left - orig.start.left;
+
+        let newStartTop = orig.start.top + deltaRow;
+        let newStartLeft = orig.start.left + deltaCol;
+
+        newStartTop = Math.max(
+          1,
+          Math.min(newStartTop, builderRef.current.rowCount - regionHeight),
+        );
+        newStartLeft = Math.max(
+          1,
+          Math.min(newStartLeft, builderRef.current.columnCount - regionWidth),
+        );
+
+        const candidate: GridArea = {
+          start: { top: newStartTop, left: newStartLeft },
+          end: {
+            top: newStartTop + regionHeight,
+            left: newStartLeft + regionWidth,
+          },
+        };
+
+        setDraftRegion(candidate);
+        interactionRef.current.draftRegion = candidate;
+        setDraftCollision(
+          doesRegionCollideExcluding(
+            candidate,
+            builderRef.current.regions,
+            orig,
+          ),
+        );
+
+        if (candidate.end.top >= builderRef.current.rowCount - 1) {
+          setRowCount((prev) => Math.max(prev, candidate.end.top + 1));
+        }
+      };
+
+      const handleMouseUp = () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+
+        const mode = interactionRef.current.mode;
+        interactionRef.current.mode = "idle";
+        setDragFloat(null);
+
+        if (mode !== "dragging") return;
+
+        const finalDraft = interactionRef.current.draftRegion;
+        const origRegion = interactionRef.current.originalRegion;
+        const entId = interactionRef.current.entityId;
+
+        if (finalDraft && origRegion && entId) {
+          const collides = doesRegionCollideExcluding(
+            finalDraft,
+            builderRef.current.regions,
+            origRegion,
+          );
+          if (!collides) {
+            builderRef.current.setEntityRegion(entId, finalDraft);
+          }
+        }
+
+        setDraftRegion(null);
+        interactionRef.current = {
+          mode: "idle",
+          entityId: null,
+          originalRegion: null,
+          startCell: null,
+          draftRegion: null,
+        };
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    },
+    [getCellFromPointer, getRegionPixelRect],
+  );
+
+  const handleEntityResizeStart = useCallback(
+    (entityId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      const entityState = builderRef.current.state[entityId];
+      if (!entityState) return;
+
+      interactionRef.current = {
+        ...interactionRef.current,
+        mode: "resizing",
+        entityId: entityId,
+        originalRegion: entityState.region,
+      };
+
+      const handleMouseMove = (ev: MouseEvent) => {
+        const current = getCellFromPointer(ev.clientX, ev.clientY);
+        if (!current || !interactionRef.current.originalRegion) return;
+
+        const orig = interactionRef.current.originalRegion;
+
+        const newEndTop = Math.max(orig.start.top, current.top);
+        const newEndLeft = Math.max(orig.start.left, current.left);
+
+        const candidate: GridArea = {
+          start: { ...orig.start },
+          end: {
+            top: Math.min(newEndTop, builderRef.current.rowCount),
+            left: Math.min(newEndLeft, builderRef.current.columnCount),
+          },
+        };
+
+        setDraftRegion(candidate);
+        interactionRef.current.draftRegion = candidate;
+        setDraftCollision(
+          doesRegionCollideExcluding(
+            candidate,
+            builderRef.current.regions,
+            orig,
+          ),
+        );
+
+        if (candidate.end.top >= builderRef.current.rowCount - 1) {
+          setRowCount((prev) => Math.max(prev, candidate.end.top + 1));
+        }
+      };
+
+      const handleMouseUp = () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+
+        const mode = interactionRef.current.mode;
+        interactionRef.current.mode = "idle";
+
+        if (mode !== "resizing") return;
+
+        const finalDraft = interactionRef.current.draftRegion;
+        const origRegion = interactionRef.current.originalRegion;
+        const entId = interactionRef.current.entityId;
+
+        if (finalDraft && origRegion && entId) {
+          const collides = doesRegionCollideExcluding(
+            finalDraft,
+            builderRef.current.regions,
+            origRegion,
+          );
+          if (!collides) {
+            builderRef.current.setEntityRegion(entId, finalDraft);
+          }
+        }
+
+        setDraftRegion(null);
+        interactionRef.current = {
+          mode: "idle",
+          entityId: null,
+          originalRegion: null,
+          startCell: null,
+          draftRegion: null,
+        };
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    },
+    [getCellFromPointer],
+  );
+
   return (
     <div
       className="flex flex-col h-full"
       onMouseDown={() => {
-        if (latest.current.interactionMode === "idle") {
+        if (interactionRef.current.mode === "idle") {
           setSelectedEntityId(null);
         }
       }}
@@ -357,6 +628,11 @@ export function PageBuilderCanvas({
             const EntityWrapper = entityEntry.wrapper;
             const region = entityState.region;
 
+            const isBeingInteracted =
+              interactionRef.current.entityId === entityId &&
+              (interactionRef.current.mode === "dragging" ||
+                interactionRef.current.mode === "resizing");
+
             return (
               <GridRegion
                 key={entityId}
@@ -364,12 +640,23 @@ export function PageBuilderCanvas({
                 left={region.start.left}
                 height={region.end.top - region.start.top + 1}
                 width={region.end.left - region.start.left + 1}
-                className="rounded-md overflow-clip group cursor-pointer"
+                className={cn(
+                  "rounded-md overflow-clip group cursor-grab",
+                  isBeingInteracted && "opacity-30",
+                )}
                 selected={selectedEntityId === entityId}
                 onSelect={() => setSelectedEntityId(entityId)}
                 onMouseDown={(e) => {
-                  e.stopPropagation();
+                  // Check if resize handle was clicked
+                  if (
+                    (e.target as HTMLElement).closest("[data-resize-handle]")
+                  ) {
+                    handleEntityResizeStart(entityId, e);
+                    return;
+                  }
+                  // Otherwise start drag
                   setSelectedEntityId(entityId);
+                  handleEntityDragStart(entityId, e);
                 }}
               >
                 <EntityWrapper entityId={entityId} />
@@ -392,6 +679,30 @@ export function PageBuilderCanvas({
             </GridRegion>
           ) : null}
         </GridLayer>
+
+        {/* Floating drag clone — follows cursor pixel-by-pixel */}
+        {dragFloat &&
+          (() => {
+            const entityState = state[dragFloat.entityId];
+            if (!entityState) return null;
+            const entityEntry = entityRegistry.current[entityState.name];
+            if (!entityEntry) return null;
+            const EntityWrapper = entityEntry.wrapper;
+
+            return (
+              <div
+                className="absolute z-50 pointer-events-none rounded-md overflow-clip opacity-80 ring-2 ring-primary shadow-lg"
+                style={{
+                  top: dragFloat.y,
+                  left: dragFloat.x,
+                  width: dragFloat.width,
+                  height: dragFloat.height,
+                }}
+              >
+                <EntityWrapper entityId={dragFloat.entityId} />
+              </div>
+            );
+          })()}
       </div>
     </div>
   );

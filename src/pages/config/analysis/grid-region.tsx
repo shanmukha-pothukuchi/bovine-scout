@@ -26,6 +26,8 @@ export function GridRegion({
   const safeLength = Math.max(1, Math.floor(height));
   const safeWidth = Math.max(1, Math.floor(width));
 
+  const isInteractive = !!onSelect;
+
   return (
     <div
       className={cn(
@@ -41,6 +43,17 @@ export function GridRegion({
       {...rest}
     >
       {children}
+      {isInteractive && (
+        <div
+          data-resize-handle
+          className={cn(
+            "absolute bottom-0 right-0 w-3 h-3 cursor-se-resize z-20",
+            "bg-primary/80 rounded-tl-sm",
+            "hover:bg-primary transition-colors",
+            !selected && "opacity-0 group-hover:opacity-100",
+          )}
+        />
+      )}
     </div>
   );
 }

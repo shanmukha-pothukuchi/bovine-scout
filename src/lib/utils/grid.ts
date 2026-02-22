@@ -27,6 +27,28 @@ export const doesRegionCollide = (
     return !isSeparated;
   });
 
+export const doesRegionCollideExcluding = (
+  region: GridArea,
+  existingRegions: GridArea[],
+  excludeRegion: GridArea,
+) =>
+  existingRegions
+    .filter(
+      (r) =>
+        r.start.top !== excludeRegion.start.top ||
+        r.start.left !== excludeRegion.start.left ||
+        r.end.top !== excludeRegion.end.top ||
+        r.end.left !== excludeRegion.end.left,
+    )
+    .some((existing) => {
+      const isSeparated =
+        region.end.left < existing.start.left ||
+        existing.end.left < region.start.left ||
+        region.end.top < existing.start.top ||
+        existing.end.top < region.start.top;
+      return !isSeparated;
+    });
+
 export const isPointInAnyRegion = (
   point: GridPoint,
   regions: GridArea[],
