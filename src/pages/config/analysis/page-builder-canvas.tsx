@@ -6,7 +6,7 @@ import {
   isPointInAnyRegion,
 } from "@/lib/utils";
 import { nanoid } from "nanoid";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
@@ -21,13 +21,20 @@ import {
 
 type PageBuilderCanvasProps = {
   selectedTool: Entity<string, any> | null;
+  selectedEntityId: string | null;
+  setSelectedEntityId: (id: string | null) => void;
 };
 
-export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
+export function PageBuilderCanvas({
+  selectedTool,
+  selectedEntityId,
+  setSelectedEntityId,
+}: PageBuilderCanvasProps) {
   const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
   const [showGrid, setShowGrid] = useState(true);
-  const canDrawRegions = showGrid && !!selectedTool;
+  const canDrawRegions =
+    showGrid && !!selectedTool && selectedEntityId === null;
   const GAP = 8;
   const PADDING = 8;
 
@@ -43,9 +50,13 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
   );
 
   const [draftRegion, setDraftRegion] = useState<GridArea | null>(null);
+  const [draftCollision, setDraftCollision] = useState(false);
   const [cellSize, setCellSize] = useState(0);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isPointerInCanvas, setIsPointerInCanvas] = useState(false);
+  const [interactionMode, setInteractionMode] = useState<"idle" | "drawing">(
+    "idle",
+  );
 
   // Ref to hold latest values for event handlers
   const latest = useRef({
@@ -57,6 +68,8 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     columnCount,
     registerEntity,
     setEntityRegion,
+    state,
+    interactionMode,
   });
   latest.current = {
     canDrawRegions,
@@ -67,6 +80,8 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     columnCount,
     registerEntity,
     setEntityRegion,
+    state,
+    interactionMode,
   };
 
   useEffect(() => {
@@ -88,43 +103,42 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     return () => observer.disconnect();
   }, [columnCount, GAP, PADDING]);
 
-  const getCellFromPointer = (
-    clientX: number,
-    clientY: number,
-  ): GridPoint | null => {
-    const container = gridLayerRef.current;
-    const { cellSize, rowCount, columnCount } = latest.current;
-    if (!container || cellSize <= 0) return null;
+  const getCellFromPointer = useCallback(
+    (clientX: number, clientY: number): GridPoint | null => {
+      const container = gridLayerRef.current;
+      const { cellSize, rowCount, columnCount } = latest.current;
+      if (!container || cellSize <= 0) return null;
 
-    const rect = container.getBoundingClientRect();
-    const x = clientX - rect.left - PADDING;
-    const y = clientY - rect.top - PADDING;
+      const rect = container.getBoundingClientRect();
+      const x = clientX - rect.left - PADDING;
+      const y = clientY - rect.top - PADDING;
 
-    const stride = cellSize + GAP;
+      const stride = cellSize + GAP;
 
-    const col = Math.floor(x / stride) + 1;
-    const row = Math.floor(y / stride) + 1;
+      const col = Math.floor(x / stride) + 1;
+      const row = Math.floor(y / stride) + 1;
 
-    if (col < 1 || col > columnCount || row < 1 || row > rowCount) {
-      return null;
-    }
+      if (col < 1 || col > columnCount || row < 1 || row > rowCount) {
+        return null;
+      }
 
-    const xInCell = x - (col - 1) * stride;
-    const yInCell = y - (row - 1) * stride;
-    if (
-      xInCell < 0 ||
-      xInCell > cellSize ||
-      yInCell < 0 ||
-      yInCell > cellSize
-    ) {
-      return null;
-    }
+      const xInCell = x - (col - 1) * stride;
+      const yInCell = y - (row - 1) * stride;
+      if (
+        xInCell < 0 ||
+        xInCell > cellSize ||
+        yInCell < 0 ||
+        yInCell > cellSize
+      ) {
+        return null;
+      }
 
-    return { top: row, left: col };
-  };
+      return { top: row, left: col };
+    },
+    [GAP, PADDING],
+  );
 
-  const hasDraftCollision =
-    draftRegion !== null ? doesRegionCollide(draftRegion, regions) : false;
+  const hasDraftCollision = draftRegion !== null ? draftCollision : false;
 
   useEffect(() => {
     if (draftRegion) {
@@ -194,6 +208,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (latest.current.interactionMode !== "idle") return;
       if (!latest.current.canDrawRegions) return;
       event.preventDefault();
       pointer.x = event.clientX;
@@ -205,6 +220,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       if (start) {
         dragState = "dragging";
         dragStart = start;
+        setInteractionMode("drawing");
         setDraftRegion(getSelectionFromPoints(start, start));
       } else {
         dragState = "pending";
@@ -232,12 +248,15 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
         }
         dragState = "dragging";
         dragStart = current;
+        setInteractionMode("drawing");
         setDraftRegion(getSelectionFromPoints(current, current));
         return;
       }
 
       if (dragStart) {
-        setDraftRegion(getSelectionFromPoints(dragStart, current));
+        const newDraft = getSelectionFromPoints(dragStart, current);
+        setDraftRegion(newDraft);
+        setDraftCollision(doesRegionCollide(newDraft, latest.current.regions));
       }
     };
 
@@ -248,6 +267,9 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       stopAutoScroll();
 
       if (!wasDragging) return;
+      if (latest.current.interactionMode !== "drawing") return;
+
+      setInteractionMode("idle");
 
       setDraftRegion((draft: GridArea | null): GridArea | null => {
         if (draft && !doesRegionCollide(draft, latest.current.regions)) {
@@ -259,6 +281,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
         }
         return null;
       });
+      setDraftCollision(false);
     };
 
     parent.addEventListener("mousedown", handleMouseDown);
@@ -272,10 +295,17 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, []);
+  }, [getCellFromPointer]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      onMouseDown={() => {
+        if (latest.current.interactionMode === "idle") {
+          setSelectedEntityId(null);
+        }
+      }}
+    >
       <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
         <div className="text-sm font-medium text-muted-foreground">Canvas</div>
         <Button
@@ -332,7 +362,13 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
                 left={region.start.left}
                 height={region.end.top - region.start.top + 1}
                 width={region.end.left - region.start.left + 1}
-                className="rounded-md overflow-clip"
+                className="rounded-md overflow-clip group cursor-pointer"
+                selected={selectedEntityId === entityId}
+                onSelect={() => setSelectedEntityId(entityId)}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setSelectedEntityId(entityId);
+                }}
               >
                 <EntityWrapper entityId={entityId} />
               </GridRegion>

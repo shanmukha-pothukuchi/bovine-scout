@@ -1,14 +1,14 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import type { HTMLAttributes } from "react";
 
 export type GridRegionSquareProps = {
   top: number;
   left: number;
   height: number;
   width: number;
-  children?: ReactNode;
-  className?: string;
-};
+  selected?: boolean;
+  onSelect?: () => void;
+} & HTMLAttributes<HTMLDivElement>;
 
 export function GridRegion({
   top,
@@ -17,6 +17,9 @@ export function GridRegion({
   width,
   children,
   className,
+  selected,
+  onSelect,
+  ...rest
 }: GridRegionSquareProps) {
   const safeTop = Math.max(1, Math.floor(top));
   const safeLeft = Math.max(1, Math.floor(left));
@@ -25,11 +28,17 @@ export function GridRegion({
 
   return (
     <div
-      className={cn("relative z-10", className)}
+      className={cn(
+        "relative z-10 select-none",
+        selected && "ring-2 ring-primary rounded-md",
+        className,
+      )}
       style={{
         gridColumn: `${safeLeft} / span ${safeWidth}`,
         gridRow: `${safeTop} / span ${safeLength}`,
       }}
+      data-grid-region
+      {...rest}
     >
       {children}
     </div>

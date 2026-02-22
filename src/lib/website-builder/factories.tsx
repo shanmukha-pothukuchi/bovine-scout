@@ -99,10 +99,6 @@ export function makeEntity<
   }: EntityWrapperProps) {
     const builderContext = useBuilderContext();
 
-    useEffect(() => {
-      builderContext.registerEntity(entityId, options);
-    }, [builderContext, entityId]);
-
     const entityState =
       builderContext.getEntityState(entityId) ?? defaultEntityState;
 

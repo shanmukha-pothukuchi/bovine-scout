@@ -5,14 +5,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalculationsPanel } from "./calculations-panel";
 import { componentCategories, availableEntities } from "./constants";
 import { PageBuilderCanvas } from "./page-builder-canvas";
-import { BuilderProvider, type AnyEntityEntry } from "@/lib/website-builder";
+import {
+  BuilderProvider,
+  useBuilderContext,
+  type AnyEntityEntry,
+} from "@/lib/website-builder";
+import { CaretLeftIcon } from "@phosphor-icons/react";
 
-export default function Analysis() {
+function AnalysisInner() {
   const calculationContexts = new Map([
     ["match", "Match"],
     ["team", "Team"],
@@ -25,42 +31,81 @@ export default function Analysis() {
   const [selectedEntity, setSelectedEntity] = useState<AnyEntityEntry | null>(
     availableEntities[0] ?? null,
   );
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+
+  const { state, getEntityState, attributeRegistry } = useBuilderContext();
 
   return (
-    <BuilderProvider entities={availableEntities}>
-      <div className="h-full flex">
-        <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
-          <div className="p-2 border-border">
-            <Select
-              value={calculationContext}
-              onValueChange={setCalculationContext}
-            >
-              <SelectTrigger size="sm">
-                <SelectValue>
-                  {calculationContext
-                    ? calculationContexts.get(calculationContext)
-                    : "Select context"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {[...calculationContexts.entries()].map(([id, name]) => (
-                  <SelectItem key={id} value={id}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <CalculationsPanel />
-          </div>
+    <div className="h-full flex">
+      <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
+        <div className="p-2 border-border">
+          <Select
+            value={calculationContext}
+            onValueChange={setCalculationContext}
+          >
+            <SelectTrigger size="sm">
+              <SelectValue>
+                {calculationContext
+                  ? calculationContexts.get(calculationContext)
+                  : "Select context"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {[...calculationContexts.entries()].map(([id, name]) => (
+                <SelectItem key={id} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex-1">
-          <PageBuilderCanvas
-            selectedTool={selectedEntity?.definition ?? null}
-          />
+        <div className="flex-1 overflow-y-auto">
+          <CalculationsPanel />
         </div>
-        <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border">
+      </div>
+      <div className="flex-1">
+        <PageBuilderCanvas
+          selectedTool={selectedEntity?.definition ?? null}
+          selectedEntityId={selectedEntityId}
+          setSelectedEntityId={setSelectedEntityId}
+        />
+      </div>
+      <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border">
+        {selectedEntityId ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setSelectedEntityId(null)}
+              >
+                <CaretLeftIcon className="opacity-50" />
+              </Button>
+              <div className="text-sm font-medium text-muted-foreground">
+                Properties
+              </div>
+            </div>
+            {(() => {
+              const entityState = getEntityState(selectedEntityId);
+              if (!entityState) return null;
+
+              return Object.entries(entityState.attributes).map(
+                ([attrName, attrState]) => {
+                  const attrEntry = attributeRegistry.current[attrState.name];
+                  if (!attrEntry) return null;
+                  const Component = attrEntry.wrapper;
+                  return (
+                    <Component
+                      key={attrName}
+                      entityId={selectedEntityId}
+                      attributeKey={attrName}
+                    />
+                  );
+                },
+              );
+            })()}
+          </div>
+        ) : (
           <div className="flex flex-col gap-4">
             {componentCategories.map((category) => (
               <div key={category.name} className="flex flex-col gap-2">
@@ -93,8 +138,16 @@ export default function Analysis() {
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+export default function Analysis() {
+  return (
+    <BuilderProvider entities={availableEntities}>
+      <AnalysisInner />
     </BuilderProvider>
   );
 }
