@@ -4,10 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
+import { SelectedToolCursor } from "./selected-tool-cursor";
 
 import type { GridArea, GridPoint } from "@/lib/website-builder";
 
-export function PageBuilderCanvas() {
+type PageBuilderCanvasProps = {
+  selectedTool: string | null;
+};
+
+export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
   const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
   const [showGrid, setShowGrid] = useState(true);
@@ -23,6 +28,8 @@ export function PageBuilderCanvas() {
   }, [regions]);
   const [draftRegion, setDraftRegion] = useState<GridArea | null>(null);
   const [cellSize, setCellSize] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const [isPointerInCanvas, setIsPointerInCanvas] = useState(false);
 
   useEffect(() => {
     const container = gridLayerRef.current;
@@ -192,7 +199,6 @@ export function PageBuilderCanvas() {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
-      if (!showGrid) return;
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
@@ -273,7 +279,7 @@ export function PageBuilderCanvas() {
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, [showGrid]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -288,6 +294,12 @@ export function PageBuilderCanvas() {
         </Button>
       </div>
       <div ref={containerRef} className="relative overflow-y-auto flex-1">
+        <SelectedToolCursor
+          visible={isPointerInCanvas}
+          x={cursorPosition.x}
+          y={cursorPosition.y}
+          label={selectedTool ?? ""}
+        />
         {showGrid && (
           <GridBackground
             columnCount={columnCount}
@@ -302,11 +314,13 @@ export function PageBuilderCanvas() {
           columnCount={columnCount}
           rowCount={rowCount}
           cellSize={cellSize}
-          containerRef={gridLayerRef}
-          className={cn(
-            "relative z-0",
-            showGrid ? "cursor-crosshair" : "cursor-default",
-          )}
+          ref={gridLayerRef}
+          onMouseMove={(event) => {
+            setCursorPosition({ x: event.clientX, y: event.clientY });
+            setIsPointerInCanvas(true);
+          }}
+          onMouseLeave={() => setIsPointerInCanvas(false)}
+          className={cn("relative z-0", "cursor-crosshair")}
         >
           {regions.map((region, index) => (
             <GridRegion

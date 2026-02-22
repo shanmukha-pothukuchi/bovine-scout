@@ -19,6 +19,7 @@ export default function Analysis() {
   const [calculationContext, setCalculationContext] = useState<string | null>(
     calculationContexts.keys().next().value || null,
   );
+  const [pageBuilderTool, setPageBuilderTool] = useState<string | null>("Text");
 
   return (
     <div className="h-full flex">
@@ -49,7 +50,7 @@ export default function Analysis() {
         </div>
       </div>
       <div className="flex-1">
-        <PageBuilderCanvas />
+        <PageBuilderCanvas selectedTool={pageBuilderTool} />
       </div>
       <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border"></div>
     </div>
