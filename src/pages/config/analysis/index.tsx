@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -5,20 +6,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { CalculationsPanel } from "./calculations-panel";
-import { componentCategories, availableEntities } from "./constants";
-import { PageBuilderCanvas } from "./page-builder-canvas";
 import {
   BuilderProvider,
   useBuilderContext,
   type AnyEntityEntry,
 } from "@/lib/website-builder";
 import { CaretLeftIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { CalculationsPanel } from "./calculations-panel";
+import { availableEntities, componentCategories } from "./constants";
+import { PageBuilderCanvas } from "./page-builder-canvas";
 
-function AnalysisInner() {
+function AnalysisContainer() {
   const calculationContexts = new Map([
     ["match", "Match"],
     ["team", "Team"],
@@ -33,7 +33,7 @@ function AnalysisInner() {
   );
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
-  const { state, getEntityState, attributeRegistry } = useBuilderContext();
+  const { getEntityState, attributeRegistry } = useBuilderContext();
 
   return (
     <div className="h-full flex">
@@ -144,10 +144,8 @@ function AnalysisInner() {
   );
 }
 
-export default function Analysis() {
-  return (
-    <BuilderProvider entities={availableEntities}>
-      <AnalysisInner />
-    </BuilderProvider>
-  );
-}
+export default () => (
+  <BuilderProvider entities={availableEntities}>
+    <AnalysisContainer />
+  </BuilderProvider>
+);

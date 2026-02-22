@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { HTMLAttributes } from "react";
+import { DATA_ATTR_GRID_REGION, DATA_ATTR_RESIZE_HANDLE } from "./constants";
 
 export type GridRegionSquareProps = {
   top: number;
@@ -39,17 +40,17 @@ export function GridRegion({
         gridColumn: `${safeLeft} / span ${safeWidth}`,
         gridRow: `${safeTop} / span ${safeLength}`,
       }}
-      data-grid-region
+      {...{ [DATA_ATTR_GRID_REGION]: true }}
       {...rest}
     >
       {children}
       {isInteractive && (
         <div
-          data-resize-handle
+          {...{ [DATA_ATTR_RESIZE_HANDLE]: true }}
           className={cn(
-            "absolute bottom-0 right-0 w-3 h-3 cursor-se-resize z-20",
-            "bg-primary/80 rounded-tl-sm",
-            "hover:bg-primary transition-colors",
+            "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-20",
+            "bg-primary/50 rounded-tl-sm",
+            "hover:bg-primary/80 transition-colors",
             !selected && "opacity-0 group-hover:opacity-100",
           )}
         />

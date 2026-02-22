@@ -1,4 +1,4 @@
-import { textEntity } from "@/components/website-builder";
+import { textEntity } from "@/components/website-builder/entities/text";
 
 export const componentCategories = [
   {
@@ -10,3 +10,6 @@ export const componentCategories = [
 export const availableEntities = componentCategories
   .map((category) => category.entities)
   .flat();
+
+export const DATA_ATTR_GRID_REGION = "data-grid-region";
+export const DATA_ATTR_RESIZE_HANDLE = "data-resize-handle";

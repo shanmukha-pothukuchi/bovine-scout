@@ -17,8 +17,8 @@ export function GridBackground({
 }: GridBackgroundProps) {
   const safeColumnCount = Math.max(1, Math.floor(columnCount));
   const safeRowCount = Math.max(1, Math.floor(rowCount));
-  const baseRowCount = safeRowCount - extraRowCount;
-  const baseOpacity = 0.3;
+  const baseRowCount = Math.max(0, safeRowCount - extraRowCount);
+  const baseOpacity = 0.5;
   const opacityStep = baseOpacity / (extraRowCount + 1);
 
   return (
@@ -28,8 +28,7 @@ export function GridBackground({
           const x = columnIndex * (cellSize + gap);
           const y = rowIndex * (cellSize + gap);
           const opacity = Math.max(
-            baseOpacity -
-              Math.max(rowIndex - baseRowCount + 1, 0) * opacityStep,
+            baseOpacity - Math.max(rowIndex - baseRowCount, 0) * opacityStep,
             0,
           );
 
