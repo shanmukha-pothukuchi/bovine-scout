@@ -1,12 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  cn,
+  doesRegionCollide,
+  getSelectionFromPoints,
+  isPointInAnyRegion,
+} from "@/lib/utils";
+import { nanoid } from "nanoid";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
 import { SelectedToolCursor } from "./selected-tool-cursor";
 
-import type { Entity, GridArea, GridPoint } from "@/lib/website-builder";
+import {
+  useBuilderContext,
+  type Entity,
+  type GridArea,
+  type GridPoint,
+} from "@/lib/website-builder";
 
 type PageBuilderCanvasProps = {
   selectedTool: Entity<string, any> | null;
@@ -22,15 +33,41 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const gridLayerRef = useRef<HTMLDivElement>(null);
-  const [regions, setRegions] = useState<GridArea[]>([]);
-  const regionsRef = useRef(regions);
-  useEffect(() => {
-    regionsRef.current = regions;
-  }, [regions]);
+
+  const { state, registerEntity, setEntityRegion, entityRegistry } =
+    useBuilderContext();
+
+  const regions = useMemo(
+    () => Object.values(state).map((entity) => entity.region),
+    [state],
+  );
+
   const [draftRegion, setDraftRegion] = useState<GridArea | null>(null);
   const [cellSize, setCellSize] = useState(0);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isPointerInCanvas, setIsPointerInCanvas] = useState(false);
+
+  // Ref to hold latest values for event handlers
+  const latest = useRef({
+    canDrawRegions,
+    selectedTool,
+    regions,
+    cellSize,
+    rowCount,
+    columnCount,
+    registerEntity,
+    setEntityRegion,
+  });
+  latest.current = {
+    canDrawRegions,
+    selectedTool,
+    regions,
+    cellSize,
+    rowCount,
+    columnCount,
+    registerEntity,
+    setEntityRegion,
+  };
 
   useEffect(() => {
     const container = gridLayerRef.current;
@@ -51,66 +88,39 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     return () => observer.disconnect();
   }, [columnCount, GAP, PADDING]);
 
-  const getCellFromPointer = useCallback(
-    (clientX: number, clientY: number): GridPoint | null => {
-      const container = gridLayerRef.current;
-      if (!container || cellSize <= 0) return null;
+  const getCellFromPointer = (
+    clientX: number,
+    clientY: number,
+  ): GridPoint | null => {
+    const container = gridLayerRef.current;
+    const { cellSize, rowCount, columnCount } = latest.current;
+    if (!container || cellSize <= 0) return null;
 
-      const rect = container.getBoundingClientRect();
-      const x = clientX - rect.left - PADDING;
-      const y = clientY - rect.top - PADDING;
+    const rect = container.getBoundingClientRect();
+    const x = clientX - rect.left - PADDING;
+    const y = clientY - rect.top - PADDING;
 
-      const stride = cellSize + GAP;
+    const stride = cellSize + GAP;
 
-      const col = Math.floor(x / stride) + 1;
-      const row = Math.floor(y / stride) + 1;
+    const col = Math.floor(x / stride) + 1;
+    const row = Math.floor(y / stride) + 1;
 
-      if (col < 1 || col > columnCount || row < 1 || row > rowCount) {
-        return null;
-      }
+    if (col < 1 || col > columnCount || row < 1 || row > rowCount) {
+      return null;
+    }
 
-      const xInCell = x - (col - 1) * stride;
-      const yInCell = y - (row - 1) * stride;
-      if (
-        xInCell < 0 ||
-        xInCell > cellSize ||
-        yInCell < 0 ||
-        yInCell > cellSize
-      ) {
-        return null;
-      }
+    const xInCell = x - (col - 1) * stride;
+    const yInCell = y - (row - 1) * stride;
+    if (
+      xInCell < 0 ||
+      xInCell > cellSize ||
+      yInCell < 0 ||
+      yInCell > cellSize
+    ) {
+      return null;
+    }
 
-      return { top: row, left: col };
-    },
-    [cellSize, rowCount, columnCount],
-  );
-
-  const getSelectionFromPoints = (
-    start: GridPoint,
-    end: GridPoint,
-  ): GridArea => {
-    return {
-      start: {
-        top: Math.min(start.top, end.top),
-        left: Math.min(start.left, end.left),
-      },
-      end: {
-        top: Math.max(start.top, end.top),
-        left: Math.max(start.left, end.left),
-      },
-    };
-  };
-
-  const doesRegionCollide = (region: GridArea, existingRegions: GridArea[]) => {
-    return existingRegions.some((existing) => {
-      const isSeparated =
-        region.end.left < existing.start.left ||
-        existing.end.left < region.start.left ||
-        region.end.top < existing.start.top ||
-        existing.end.top < region.start.top;
-
-      return !isSeparated;
-    });
+    return { top: row, left: col };
   };
 
   const hasDraftCollision =
@@ -124,11 +134,6 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       }
     }
   }, [draftRegion, rowCount]);
-
-  const getCellFromPointerRef = useRef(getCellFromPointer);
-  useEffect(() => {
-    getCellFromPointerRef.current = getCellFromPointer;
-  }, [getCellFromPointer]);
 
   useEffect(() => {
     const parent = gridLayerRef.current;
@@ -172,10 +177,10 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       }
 
       if (scrolled) {
-        const cell = getCellFromPointerRef.current(pointer.x, pointer.y);
+        const cell = getCellFromPointer(pointer.x, pointer.y);
         if (cell) {
           if (dragState === "pending") {
-            if (isPointInAnyRegion(cell)) return;
+            if (isPointInAnyRegion(cell, latest.current.regions)) return;
             dragState = "dragging";
             dragStart = cell;
             setDraftRegion(getSelectionFromPoints(cell, cell));
@@ -188,25 +193,14 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       scrollFrame = requestAnimationFrame(autoScroll);
     };
 
-    const isPointInAnyRegion = (point: GridPoint): boolean => {
-      return regionsRef.current.some((region) => {
-        return (
-          point.left >= region.start.left &&
-          point.left <= region.end.left &&
-          point.top >= region.start.top &&
-          point.top <= region.end.top
-        );
-      });
-    };
-
     const handleMouseDown = (event: MouseEvent) => {
-      if (!canDrawRegions) return;
+      if (!latest.current.canDrawRegions) return;
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
 
-      const start = getCellFromPointerRef.current(event.clientX, event.clientY);
-      if (start && isPointInAnyRegion(start)) return;
+      const start = getCellFromPointer(event.clientX, event.clientY);
+      if (start && isPointInAnyRegion(start, latest.current.regions)) return;
 
       if (start) {
         dragState = "dragging";
@@ -227,14 +221,11 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
 
       event.preventDefault();
 
-      const current = getCellFromPointerRef.current(
-        event.clientX,
-        event.clientY,
-      );
+      const current = getCellFromPointer(event.clientX, event.clientY);
       if (!current) return;
 
       if (dragState === "pending") {
-        if (isPointInAnyRegion(current)) {
+        if (isPointInAnyRegion(current, latest.current.regions)) {
           dragState = "idle";
           stopAutoScroll();
           return;
@@ -259,12 +250,12 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       if (!wasDragging) return;
 
       setDraftRegion((draft: GridArea | null): GridArea | null => {
-        if (draft) {
-          setRegions((previous: GridArea[]): GridArea[] =>
-            !doesRegionCollide(draft, previous)
-              ? [...previous, draft]
-              : previous,
-          );
+        if (draft && !doesRegionCollide(draft, latest.current.regions)) {
+          const { selectedTool, registerEntity } = latest.current;
+          if (selectedTool) {
+            const id = nanoid();
+            registerEntity(id, selectedTool, draft);
+          }
         }
         return null;
       });
@@ -281,7 +272,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, [canDrawRegions]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -328,17 +319,25 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
             canDrawRegions ? "cursor-crosshair" : "cursor-default",
           )}
         >
-          {regions.map((region, index) => (
-            <GridRegion
-              key={`${region.start.top}-${region.start.left}-${region.end.top}-${region.end.left}-${index}`}
-              top={region.start.top}
-              left={region.start.left}
-              height={region.end.top - region.start.top + 1}
-              width={region.end.left - region.start.left + 1}
-            >
-              <div className="w-full h-full bg-accent/50 rounded-md" />
-            </GridRegion>
-          ))}
+          {Object.entries(state).map(([entityId, entityState]) => {
+            const entityEntry = entityRegistry.current[entityState.name];
+            if (!entityEntry) return null;
+            const EntityWrapper = entityEntry.wrapper;
+            const region = entityState.region;
+
+            return (
+              <GridRegion
+                key={entityId}
+                top={region.start.top}
+                left={region.start.left}
+                height={region.end.top - region.start.top + 1}
+                width={region.end.left - region.start.left + 1}
+                className="rounded-md overflow-clip"
+              >
+                <EntityWrapper entityId={entityId} />
+              </GridRegion>
+            );
+          })}
           {draftRegion ? (
             <GridRegion
               top={draftRegion.start.top}

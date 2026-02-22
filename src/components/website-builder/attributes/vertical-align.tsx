@@ -22,7 +22,7 @@ const verticalAlignOptions: {
 
 export const verticalAlignAttr = makeAttribute({
   name: "verticalAlign",
-  defaultValue: "top" as VerticalAlign,
+  defaultValue: "middle" as VerticalAlign,
   validate: (value: VerticalAlign) => value,
   component: ({ value, setValue }) => {
     return (

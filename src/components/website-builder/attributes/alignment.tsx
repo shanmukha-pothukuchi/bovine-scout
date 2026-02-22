@@ -23,7 +23,7 @@ const alignmentOptions: {
 
 export const alignmentAttr = makeAttribute({
   name: "alignment",
-  defaultValue: "left" as Alignment,
+  defaultValue: "center" as Alignment,
   validate: (value: Alignment) => value,
   component: ({ value, setValue }) => {
     return (

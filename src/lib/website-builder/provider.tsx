@@ -92,6 +92,7 @@ export function BuilderProvider({
     >(
       entityId: string,
       entity: Entity<TName, TAttributes>,
+      region: GridArea | null = null,
     ) => {
       setState((prev) => {
         if (prev[entityId]) return prev;
@@ -112,7 +113,7 @@ export function BuilderProvider({
           ...prev,
           [entityId]: {
             name: entity.name,
-            region: {
+            region: region ?? {
               start: { top: 1, left: 1 },
               end: { top: 1, left: 1 },
             },

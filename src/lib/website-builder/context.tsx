@@ -24,6 +24,7 @@ export interface BuilderContextValue {
   >(
     entityId: string,
     entity: Entity<TName, TAttributes>,
+    region?: GridArea | null,
   ) => void;
   deregisterEntity: (entityId: string) => void;
   getEntityState: (entityId: string) => EntityStateData | undefined;

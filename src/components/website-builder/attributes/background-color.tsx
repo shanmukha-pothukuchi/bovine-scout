@@ -4,7 +4,7 @@ import { makeAttribute } from "@/lib/website-builder";
 
 export const backgroundColorAttr = makeAttribute({
   name: "backgroundColor",
-  defaultValue: "#ffffff",
+  defaultValue: "red",
   validate: (value: string) => value,
   component: ({ value, setValue }) => {
     return (
