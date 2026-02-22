@@ -5,6 +5,7 @@ export type GridRegionSquareProps = {
   left: number;
   height: number;
   width: number;
+  isResizing?: boolean;
   children?: ReactNode;
 };
 
@@ -13,6 +14,7 @@ export function GridRegion({
   left,
   height,
   width,
+  isResizing = false,
   children,
 }: GridRegionSquareProps) {
   const safeTop = Math.max(1, Math.floor(top));
@@ -26,6 +28,7 @@ export function GridRegion({
       style={{
         gridColumn: `${safeLeft} / span ${safeWidth}`,
         gridRow: `${safeTop} / span ${safeLength}`,
+        pointerEvents: isResizing ? "none" : "auto",
       }}
     >
       {children}

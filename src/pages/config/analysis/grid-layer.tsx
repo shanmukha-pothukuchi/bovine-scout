@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
 type GridLayerProps = {
   columnCount: number;
@@ -7,6 +7,7 @@ type GridLayerProps = {
   showBoxes?: boolean;
   children?: ReactNode;
   className?: string;
+  containerRef?: RefObject<HTMLDivElement | null>;
 };
 
 export function GridLayer({
@@ -15,6 +16,7 @@ export function GridLayer({
   showBoxes = false,
   children,
   className = "",
+  containerRef,
 }: GridLayerProps) {
   const safeColumnCount = Math.max(1, Math.floor(columnCount));
   const safeRowCount = Math.max(1, Math.floor(rowCount));
@@ -26,6 +28,7 @@ export function GridLayer({
 
   return (
     <div
+      ref={containerRef}
       className={cn("w-full p-2 grid gap-2 h-fit", className)}
       style={{
         gridTemplateColumns: `repeat(${safeColumnCount}, minmax(0, 1fr))`,
@@ -36,6 +39,9 @@ export function GridLayer({
           <div
             className="w-full aspect-square rounded-md bg-secondary"
             key={`${rowIndex}-${columnIndex}`}
+            data-grid-cell={showBoxes}
+            data-top={rowIndex + 1}
+            data-left={columnIndex + 1}
             style={{
               opacity: Math.max(
                 baseOpacity -
