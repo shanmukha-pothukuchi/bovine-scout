@@ -69,7 +69,7 @@ export function FormEditor({
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                size="icon"
+                size="icon-sm"
                 onClick={() => setSelected(null)}
               >
                 <CaretLeftIcon className="opacity-50" />

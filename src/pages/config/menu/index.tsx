@@ -168,7 +168,7 @@ export default function MenuEditor() {
               value={gamePeriod}
               onValueChange={(val) => val && setGamePeriod(val)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="sm">
                 <SelectValue>{gamePeriod}</SelectValue>
               </SelectTrigger>
 
@@ -183,7 +183,7 @@ export default function MenuEditor() {
 
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={() => {
                 setMenuTree((prev) => [
                   ...prev,
@@ -195,7 +195,7 @@ export default function MenuEditor() {
                 ]);
               }}
             >
-              <PlusIcon className="opacity-50" />
+              <PlusIcon />
             </Button>
           </div>
 

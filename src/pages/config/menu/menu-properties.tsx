@@ -27,7 +27,7 @@ export function MenuProperties({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
           <CaretLeftIcon className="opacity-50" />
         </Button>
         <div className="text-sm font-medium text-muted-foreground">

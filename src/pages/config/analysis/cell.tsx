@@ -191,7 +191,7 @@ export function Cell({
   const [active, setActive] = useState(true);
 
   return (
-    <div className="border border-border flex font-mono text-base">
+    <div className="first:border-t border-b border-border flex font-mono text-base">
       <div
         className="w-12 bg-muted relative"
         onClick={() => setActive(!active)}

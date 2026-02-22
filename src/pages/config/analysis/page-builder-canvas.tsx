@@ -21,7 +21,6 @@ export function PageBuilderCanvas() {
   const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
   const [showGrid, setShowGrid] = useState(true);
-  const EXTRA_ROW_BUFFER = 3;
   const GAP = 8;
   const PADDING = 8;
 
@@ -132,11 +131,11 @@ export function PageBuilderCanvas() {
   useEffect(() => {
     if (draftRegion) {
       const bottomRow = draftRegion.top + draftRegion.height - 1;
-      if (bottomRow >= rowCount - EXTRA_ROW_BUFFER) {
-        setRowCount((prev) => Math.max(prev, bottomRow + EXTRA_ROW_BUFFER));
+      if (bottomRow >= rowCount - 1) {
+        setRowCount((prev) => Math.max(prev, bottomRow + 1));
       }
     }
-  }, [draftRegion, rowCount, EXTRA_ROW_BUFFER]);
+  }, [draftRegion, rowCount]);
 
   const getCellFromPointerRef = useRef(getCellFromPointer);
   useEffect(() => {
@@ -313,7 +312,7 @@ export function PageBuilderCanvas() {
           <GridBackground
             columnCount={columnCount}
             rowCount={rowCount}
-            extraRowCount={EXTRA_ROW_BUFFER}
+            extraRowCount={3}
             cellSize={cellSize}
             gap={GAP}
             padding={PADDING}
@@ -350,7 +349,7 @@ export function PageBuilderCanvas() {
               <div
                 className={cn(
                   "w-full h-full rounded-md grid place-items-center",
-                  hasDraftCollision ? "bg-red-500/15" : "bg-green-500/15",
+                  hasDraftCollision ? "bg-red-500/15" : "bg-blue-500/15",
                 )}
               />
             </GridRegion>

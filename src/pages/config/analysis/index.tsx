@@ -22,13 +22,13 @@ export default function Analysis() {
 
   return (
     <div className="h-full flex">
-      <div className="w-100 h-full bg-sidebar border-r border-border flex flex-col">
-        <div className="p-2 bg-secondary border-border">
+      <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
+        <div className="p-2 border-border">
           <Select
             value={calculationContext}
             onValueChange={setCalculationContext}
           >
-            <SelectTrigger>
+            <SelectTrigger size="sm">
               <SelectValue>
                 {calculationContext
                   ? calculationContexts.get(calculationContext)
