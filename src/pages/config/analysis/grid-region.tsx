@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 export type GridRegionSquareProps = {
@@ -5,8 +6,8 @@ export type GridRegionSquareProps = {
   left: number;
   height: number;
   width: number;
-  isResizing?: boolean;
   children?: ReactNode;
+  className?: string;
 };
 
 export function GridRegion({
@@ -14,8 +15,8 @@ export function GridRegion({
   left,
   height,
   width,
-  isResizing = false,
   children,
+  className,
 }: GridRegionSquareProps) {
   const safeTop = Math.max(1, Math.floor(top));
   const safeLeft = Math.max(1, Math.floor(left));
@@ -24,11 +25,10 @@ export function GridRegion({
 
   return (
     <div
-      className="relative z-10"
+      className={cn("relative z-10", className)}
       style={{
         gridColumn: `${safeLeft} / span ${safeWidth}`,
         gridRow: `${safeTop} / span ${safeLength}`,
-        pointerEvents: isResizing ? "none" : "auto",
       }}
     >
       {children}

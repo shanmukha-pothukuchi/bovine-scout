@@ -17,7 +17,7 @@ type GridSelection = {
 };
 
 export function PageBuilderCanvas() {
-  const [columnCount, setColumnCount] = useState(12);
+  const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
   const EXTRA_ROW_BUFFER = 3;
   const GAP = 8;
@@ -27,6 +27,10 @@ export function PageBuilderCanvas() {
   const gridLayerRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<"idle" | "pending" | "dragging">("idle");
   const [regions, setRegions] = useState<GridSelection[]>([]);
+  const regionsRef = useRef<GridSelection[]>(regions);
+  useEffect(() => {
+    regionsRef.current = regions;
+  }, [regions]);
   const [draftRegion, setDraftRegion] = useState<GridSelection | null>(null);
   const [cellSize, setCellSize] = useState(0);
 
@@ -193,6 +197,7 @@ export function PageBuilderCanvas() {
         const cell = getCellFromPointerRef.current(pointer.x, pointer.y, true);
         if (cell) {
           if (dragStateRef.current === "pending") {
+            if (isPointInAnyRegion(cell)) return;
             dragStateRef.current = "dragging";
             dragStart = cell;
             setDraftRegion(getSelectionFromPoints(cell, cell));
@@ -205,10 +210,28 @@ export function PageBuilderCanvas() {
       scrollFrame = requestAnimationFrame(autoScroll);
     };
 
+    const isPointInAnyRegion = (point: GridPoint): boolean => {
+      return regionsRef.current.some((region) => {
+        return (
+          point.left >= region.left &&
+          point.left < region.left + region.width &&
+          point.top >= region.top &&
+          point.top < region.top + region.height
+        );
+      });
+    };
+
     const handleMouseDown = (event: MouseEvent) => {
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
+
+      const nearest = getCellFromPointerRef.current(
+        event.clientX,
+        event.clientY,
+        true,
+      );
+      if (nearest && isPointInAnyRegion(nearest)) return;
 
       const start = getCellFromPointerRef.current(event.clientX, event.clientY);
       if (start) {
@@ -237,6 +260,11 @@ export function PageBuilderCanvas() {
       if (!current) return;
 
       if (dragStateRef.current === "pending") {
+        if (isPointInAnyRegion(current)) {
+          dragStateRef.current = "idle";
+          stopAutoScroll();
+          return;
+        }
         dragStateRef.current = "dragging";
         dragStart = current;
         setDraftRegion(getSelectionFromPoints(current, current));
@@ -305,7 +333,6 @@ export function PageBuilderCanvas() {
             left={region.left}
             height={region.height}
             width={region.width}
-            isResizing={draftRegion !== null}
           >
             <div className="w-full h-full bg-accent/50 rounded-md" />
           </GridRegion>
@@ -316,16 +343,13 @@ export function PageBuilderCanvas() {
             left={draftRegion.left}
             height={draftRegion.height}
             width={draftRegion.width}
-            isResizing={draftRegion !== null}
           >
             <div
               className={cn(
                 "w-full h-full rounded-md grid place-items-center",
                 hasDraftCollision ? "bg-red-500/15" : "bg-green-500/15",
               )}
-            >
-              hello world
-            </div>
+            />
           </GridRegion>
         ) : null}
       </GridLayer>
