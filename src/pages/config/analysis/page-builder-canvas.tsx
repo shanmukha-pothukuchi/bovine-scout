@@ -107,6 +107,54 @@ export function PageBuilderCanvas({
     draftRegion,
   };
 
+  const scrollPointerRef = useRef({ x: 0, y: 0 });
+  const scrollFrameRef = useRef<number | null>(null);
+
+  const performAutoScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      scrollFrameRef.current = null;
+      return;
+    }
+
+    const rect = container.getBoundingClientRect();
+    const EDGE_THRESHOLD = 50;
+    const SCROLL_SPEED = 10;
+    let scrolled = false;
+
+    if (scrollPointerRef.current.y < rect.top + EDGE_THRESHOLD) {
+      container.scrollTop -= SCROLL_SPEED;
+      scrolled = true;
+    } else if (scrollPointerRef.current.y > rect.bottom - EDGE_THRESHOLD) {
+      container.scrollTop += SCROLL_SPEED;
+      scrolled = true;
+    }
+
+    if (scrolled) {
+      const event = new MouseEvent("mousemove", {
+        clientX: scrollPointerRef.current.x,
+        clientY: scrollPointerRef.current.y,
+        bubbles: true,
+      });
+      window.dispatchEvent(event);
+    }
+
+    scrollFrameRef.current = requestAnimationFrame(performAutoScroll);
+  }, []);
+
+  const startAutoScroll = useCallback(() => {
+    if (scrollFrameRef.current === null) {
+      scrollFrameRef.current = requestAnimationFrame(performAutoScroll);
+    }
+  }, [performAutoScroll]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (scrollFrameRef.current !== null) {
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     const container = gridLayerRef.current;
     if (!container) return;
@@ -178,58 +226,8 @@ export function PageBuilderCanvas({
     const container = containerRef.current;
     if (!parent || !container) return;
 
-    const EDGE_THRESHOLD = 100;
-    const SCROLL_SPEED = 10;
-
-    let scrollFrame: number | null = null;
     let dragState: "idle" | "pending" | "dragging" = "idle";
     let dragStart: GridPoint | null = null;
-    const pointer = { x: 0, y: 0 };
-
-    const startAutoScroll = () => {
-      if (scrollFrame !== null) return;
-      scrollFrame = requestAnimationFrame(autoScroll);
-    };
-
-    const stopAutoScroll = () => {
-      if (scrollFrame === null) return;
-      cancelAnimationFrame(scrollFrame);
-      scrollFrame = null;
-    };
-
-    const autoScroll = () => {
-      if (dragState === "idle") {
-        scrollFrame = null;
-        return;
-      }
-
-      const rect = container.getBoundingClientRect();
-      let scrolled = false;
-
-      if (pointer.y < rect.top + EDGE_THRESHOLD) {
-        container.scrollTop -= SCROLL_SPEED;
-        scrolled = true;
-      } else if (pointer.y > rect.bottom - EDGE_THRESHOLD) {
-        container.scrollTop += SCROLL_SPEED;
-        scrolled = true;
-      }
-
-      if (scrolled) {
-        const cell = getCellFromPointer(pointer.x, pointer.y);
-        if (cell) {
-          if (dragState === "pending") {
-            if (isPointInAnyRegion(cell, builderRef.current.regions)) return;
-            dragState = "dragging";
-            dragStart = cell;
-            setDraftRegion(getSelectionFromPoints(cell, cell));
-          } else if (dragStart) {
-            setDraftRegion(getSelectionFromPoints(dragStart, cell));
-          }
-        }
-      }
-
-      scrollFrame = requestAnimationFrame(autoScroll);
-    };
 
     const handleMouseDown = (event: MouseEvent) => {
       if (interactionRef.current.mode !== "idle") return;
@@ -242,8 +240,7 @@ export function PageBuilderCanvas({
       }
 
       event.preventDefault();
-      pointer.x = event.clientX;
-      pointer.y = event.clientY;
+      scrollPointerRef.current = { x: event.clientX, y: event.clientY };
 
       const start = getCellFromPointer(event.clientX, event.clientY);
       if (start && isPointInAnyRegion(start, builderRef.current.regions))
@@ -262,8 +259,7 @@ export function PageBuilderCanvas({
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      pointer.x = event.clientX;
-      pointer.y = event.clientY;
+      scrollPointerRef.current = { x: event.clientX, y: event.clientY };
 
       if (dragState === "idle") return;
 
@@ -325,11 +321,12 @@ export function PageBuilderCanvas({
 
     return () => {
       parent.removeEventListener("mousedown", handleMouseDown);
+      parent.removeEventListener("dragstart", (e) => e.preventDefault());
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, [getCellFromPointer]);
+  }, [getCellFromPointer, startAutoScroll, stopAutoScroll]);
 
   /** Get the pixel rect of a grid region relative to the scroll container */
   const getRegionPixelRect = useCallback(
@@ -363,6 +360,9 @@ export function PageBuilderCanvas({
       const startCell = getCellFromPointer(e.clientX, e.clientY);
       interactionRef.current.startCell = startCell;
 
+      scrollPointerRef.current = { x: e.clientX, y: e.clientY };
+      startAutoScroll();
+
       const pixelRect = getRegionPixelRect(entityState.region);
       const containerRect = containerRef.current?.getBoundingClientRect();
       const scrollTop = containerRef.current?.scrollTop ?? 0;
@@ -380,6 +380,8 @@ export function PageBuilderCanvas({
       });
 
       const handleMouseMove = (ev: MouseEvent) => {
+        scrollPointerRef.current = { x: ev.clientX, y: ev.clientY };
+
         const cRect = containerRef.current?.getBoundingClientRect();
         const sTop = containerRef.current?.scrollTop ?? 0;
         setDragFloat((prev) =>
@@ -445,6 +447,7 @@ export function PageBuilderCanvas({
       const handleMouseUp = () => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+        stopAutoScroll();
 
         const mode = interactionRef.current.mode;
         interactionRef.current.mode = "idle";
@@ -480,7 +483,7 @@ export function PageBuilderCanvas({
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [getCellFromPointer, getRegionPixelRect],
+    [getCellFromPointer, getRegionPixelRect, startAutoScroll, stopAutoScroll],
   );
 
   const handleEntityResizeStart = useCallback(
@@ -498,7 +501,12 @@ export function PageBuilderCanvas({
         originalRegion: entityState.region,
       };
 
+      scrollPointerRef.current = { x: e.clientX, y: e.clientY };
+      startAutoScroll();
+
       const handleMouseMove = (ev: MouseEvent) => {
+        scrollPointerRef.current = { x: ev.clientX, y: ev.clientY };
+
         const current = getCellFromPointer(ev.clientX, ev.clientY);
         if (!current || !interactionRef.current.originalRegion) return;
 
@@ -533,6 +541,7 @@ export function PageBuilderCanvas({
       const handleMouseUp = () => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+        stopAutoScroll();
 
         const mode = interactionRef.current.mode;
         interactionRef.current.mode = "idle";
@@ -567,7 +576,7 @@ export function PageBuilderCanvas({
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [getCellFromPointer],
+    [getCellFromPointer, startAutoScroll, stopAutoScroll],
   );
 
   return (
