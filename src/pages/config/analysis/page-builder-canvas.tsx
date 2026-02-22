@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
@@ -21,12 +22,13 @@ export function PageBuilderCanvas() {
   const isMouseDownRef = useRef(false);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<GridPoint | null>(null);
-  const [selection, setSelection] = useState<GridSelection>({
-    top: 2,
-    left: 4,
-    height: 3,
-    width: 3,
-  });
+  const draftRegionRef = useRef<GridSelection | null>(null);
+  const [regions, setRegions] = useState<GridSelection[]>([]);
+  const [draftRegion, setDraftRegion] = useState<GridSelection | null>(null);
+
+  useEffect(() => {
+    draftRegionRef.current = draftRegion;
+  }, [draftRegion]);
 
   const getCellFromTarget = (target: EventTarget | null): GridPoint | null => {
     if (!(target instanceof HTMLElement)) {
@@ -49,6 +51,21 @@ export function PageBuilderCanvas() {
     return { top, left };
   };
 
+  const getCellFromPointer = (event: MouseEvent): GridPoint | null => {
+    const directCell = getCellFromTarget(event.target);
+
+    if (directCell) {
+      return directCell;
+    }
+
+    const elementUnderPointer = document.elementFromPoint(
+      event.clientX,
+      event.clientY,
+    );
+
+    return getCellFromTarget(elementUnderPointer);
+  };
+
   const getSelectionFromPoints = (
     start: GridPoint,
     end: GridPoint,
@@ -66,6 +83,30 @@ export function PageBuilderCanvas() {
     };
   };
 
+  const doesRegionCollide = (
+    region: GridSelection,
+    existingRegions: GridSelection[],
+  ) => {
+    const regionBottom = region.top + region.height - 1;
+    const regionRight = region.left + region.width - 1;
+
+    return existingRegions.some((existingRegion) => {
+      const existingBottom = existingRegion.top + existingRegion.height - 1;
+      const existingRight = existingRegion.left + existingRegion.width - 1;
+
+      const isSeparated =
+        regionRight < existingRegion.left ||
+        existingRight < region.left ||
+        regionBottom < existingRegion.top ||
+        existingBottom < region.top;
+
+      return !isSeparated;
+    });
+  };
+
+  const hasDraftCollision =
+    draftRegion !== null ? doesRegionCollide(draftRegion, regions) : false;
+
   useEffect(() => {
     const parent = gridLayerRef.current;
 
@@ -75,6 +116,7 @@ export function PageBuilderCanvas() {
 
     const handleMouseDown = (event: MouseEvent) => {
       isMouseDownRef.current = true;
+      event.preventDefault();
 
       const start = getCellFromTarget(event.target);
 
@@ -82,10 +124,9 @@ export function PageBuilderCanvas() {
         return;
       }
 
-      event.preventDefault();
       isDraggingRef.current = true;
       dragStartRef.current = start;
-      setSelection(getSelectionFromPoints(start, start));
+      setDraftRegion(getSelectionFromPoints(start, start));
     };
 
     const handleMouseMove = (event: MouseEvent) => {
@@ -93,7 +134,7 @@ export function PageBuilderCanvas() {
         return;
       }
 
-      const current = getCellFromTarget(event.target);
+      const current = getCellFromPointer(event);
 
       if (!current) {
         return;
@@ -103,13 +144,13 @@ export function PageBuilderCanvas() {
         event.preventDefault();
         isDraggingRef.current = true;
         dragStartRef.current = current;
-        setSelection(getSelectionFromPoints(current, current));
+        setDraftRegion(getSelectionFromPoints(current, current));
         return;
       }
 
       event.preventDefault();
 
-      setSelection(getSelectionFromPoints(dragStartRef.current, current));
+      setDraftRegion(getSelectionFromPoints(dragStartRef.current, current));
     };
 
     const finalizeDrag = () => {
@@ -119,6 +160,13 @@ export function PageBuilderCanvas() {
         return;
       }
 
+      setRegions((previous) =>
+        draftRegionRef.current &&
+        !doesRegionCollide(draftRegionRef.current, previous)
+          ? [...previous, draftRegionRef.current]
+          : previous,
+      );
+      setDraftRegion(null);
       isDraggingRef.current = false;
       dragStartRef.current = null;
     };
@@ -156,17 +204,42 @@ export function PageBuilderCanvas() {
         rowCount={rowCount}
         className="absolute inset-0 pointer-events-none"
       >
-        <GridRegion
-          top={selection.top}
-          left={selection.left}
-          height={selection.height}
-          width={selection.width}
-          isResizing={true}
-        >
-          <div className="w-full h-full bg-accent/50 rounded-md grid place-items-center">
-            hello world
-          </div>
-        </GridRegion>
+        {regions.map((region, index) => (
+          <GridRegion
+            key={`${region.top}-${region.left}-${region.height}-${region.width}-${index}`}
+            top={region.top}
+            left={region.left}
+            height={region.height}
+            width={region.width}
+            isResizing={draftRegion !== null}
+          >
+            <div className="w-full h-full bg-accent/50 rounded-md" />
+          </GridRegion>
+        ))}
+      </GridLayer>
+      <GridLayer
+        columnCount={columnCount}
+        rowCount={rowCount}
+        className="absolute inset-0 pointer-events-none"
+      >
+        {draftRegion ? (
+          <GridRegion
+            top={draftRegion.top}
+            left={draftRegion.left}
+            height={draftRegion.height}
+            width={draftRegion.width}
+            isResizing={draftRegion !== null}
+          >
+            <div
+              className={cn(
+                "w-full h-full rounded-md grid place-items-center",
+                hasDraftCollision ? "bg-red-500/15" : "bg-green-500/15",
+              )}
+            >
+              hello world
+            </div>
+          </GridRegion>
+        ) : null}
       </GridLayer>
     </div>
   );
