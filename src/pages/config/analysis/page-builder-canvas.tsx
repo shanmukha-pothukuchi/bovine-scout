@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GridBackground } from "./grid-background";
@@ -19,15 +20,15 @@ type GridSelection = {
 export function PageBuilderCanvas() {
   const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
+  const [showGrid, setShowGrid] = useState(true);
   const EXTRA_ROW_BUFFER = 3;
   const GAP = 8;
   const PADDING = 8;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const gridLayerRef = useRef<HTMLDivElement>(null);
-  const dragStateRef = useRef<"idle" | "pending" | "dragging">("idle");
   const [regions, setRegions] = useState<GridSelection[]>([]);
-  const regionsRef = useRef<GridSelection[]>(regions);
+  const regionsRef = useRef(regions);
   useEffect(() => {
     regionsRef.current = regions;
   }, [regions]);
@@ -54,24 +55,15 @@ export function PageBuilderCanvas() {
   }, [columnCount, GAP, PADDING]);
 
   const getCellFromPointer = useCallback(
-    (
-      clientX: number,
-      clientY: number,
-      clampToGrid = false,
-    ): GridPoint | null => {
+    (clientX: number, clientY: number): GridPoint | null => {
       const container = gridLayerRef.current;
       if (!container || cellSize <= 0) return null;
 
       const rect = container.getBoundingClientRect();
-      let x = clientX - rect.left - PADDING;
-      let y = clientY - rect.top - PADDING;
+      const x = clientX - rect.left - PADDING;
+      const y = clientY - rect.top - PADDING;
 
       const stride = cellSize + GAP;
-
-      if (clampToGrid) {
-        x = Math.max(0, Math.min(x, columnCount * stride - GAP));
-        y = Math.max(0, Math.min(y, rowCount * stride - GAP));
-      }
 
       const col = Math.floor(x / stride) + 1;
       const row = Math.floor(y / stride) + 1;
@@ -80,17 +72,15 @@ export function PageBuilderCanvas() {
         return null;
       }
 
-      if (!clampToGrid) {
-        const xInCell = x - (col - 1) * stride;
-        const yInCell = y - (row - 1) * stride;
-        if (
-          xInCell < 0 ||
-          xInCell > cellSize ||
-          yInCell < 0 ||
-          yInCell > cellSize
-        ) {
-          return null;
-        }
+      const xInCell = x - (col - 1) * stride;
+      const yInCell = y - (row - 1) * stride;
+      if (
+        xInCell < 0 ||
+        xInCell > cellSize ||
+        yInCell < 0 ||
+        yInCell > cellSize
+      ) {
+        return null;
       }
 
       return { top: row, left: col };
@@ -162,6 +152,7 @@ export function PageBuilderCanvas() {
     const SCROLL_SPEED = 10;
 
     let scrollFrame: number | null = null;
+    let dragState: "idle" | "pending" | "dragging" = "idle";
     let dragStart: GridPoint | null = null;
     const pointer = { x: 0, y: 0 };
 
@@ -177,7 +168,7 @@ export function PageBuilderCanvas() {
     };
 
     const autoScroll = () => {
-      if (dragStateRef.current === "idle") {
+      if (dragState === "idle") {
         scrollFrame = null;
         return;
       }
@@ -194,11 +185,11 @@ export function PageBuilderCanvas() {
       }
 
       if (scrolled) {
-        const cell = getCellFromPointerRef.current(pointer.x, pointer.y, true);
+        const cell = getCellFromPointerRef.current(pointer.x, pointer.y);
         if (cell) {
-          if (dragStateRef.current === "pending") {
+          if (dragState === "pending") {
             if (isPointInAnyRegion(cell)) return;
-            dragStateRef.current = "dragging";
+            dragState = "dragging";
             dragStart = cell;
             setDraftRegion(getSelectionFromPoints(cell, cell));
           } else if (dragStart) {
@@ -222,24 +213,20 @@ export function PageBuilderCanvas() {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (!showGrid) return;
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
 
-      const nearest = getCellFromPointerRef.current(
-        event.clientX,
-        event.clientY,
-        true,
-      );
-      if (nearest && isPointInAnyRegion(nearest)) return;
-
       const start = getCellFromPointerRef.current(event.clientX, event.clientY);
+      if (start && isPointInAnyRegion(start)) return;
+
       if (start) {
-        dragStateRef.current = "dragging";
+        dragState = "dragging";
         dragStart = start;
         setDraftRegion(getSelectionFromPoints(start, start));
       } else {
-        dragStateRef.current = "pending";
+        dragState = "pending";
       }
 
       startAutoScroll();
@@ -249,23 +236,23 @@ export function PageBuilderCanvas() {
       pointer.x = event.clientX;
       pointer.y = event.clientY;
 
-      if (dragStateRef.current === "idle") return;
+      if (dragState === "idle") return;
 
       event.preventDefault();
+
       const current = getCellFromPointerRef.current(
         event.clientX,
         event.clientY,
-        true,
       );
       if (!current) return;
 
-      if (dragStateRef.current === "pending") {
+      if (dragState === "pending") {
         if (isPointInAnyRegion(current)) {
-          dragStateRef.current = "idle";
+          dragState = "idle";
           stopAutoScroll();
           return;
         }
-        dragStateRef.current = "dragging";
+        dragState = "dragging";
         dragStart = current;
         setDraftRegion(getSelectionFromPoints(current, current));
         return;
@@ -277,8 +264,8 @@ export function PageBuilderCanvas() {
     };
 
     const finalizeDrag = () => {
-      const wasDragging = dragStateRef.current === "dragging";
-      dragStateRef.current = "idle";
+      const wasDragging = dragState === "dragging";
+      dragState = "idle";
       dragStart = null;
       stopAutoScroll();
 
@@ -307,52 +294,69 @@ export function PageBuilderCanvas() {
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, []);
+  }, [showGrid]);
 
   return (
-    <div ref={containerRef} className="relative overflow-y-auto h-full">
-      <GridBackground
-        columnCount={columnCount}
-        rowCount={rowCount}
-        extraRowCount={EXTRA_ROW_BUFFER}
-        cellSize={cellSize}
-        gap={GAP}
-        padding={PADDING}
-      />
-      <GridLayer
-        columnCount={columnCount}
-        rowCount={rowCount}
-        cellSize={cellSize}
-        containerRef={gridLayerRef}
-        className="cursor-crosshair relative z-0"
-      >
-        {regions.map((region, index) => (
-          <GridRegion
-            key={`${region.top}-${region.left}-${region.height}-${region.width}-${index}`}
-            top={region.top}
-            left={region.left}
-            height={region.height}
-            width={region.width}
-          >
-            <div className="w-full h-full bg-accent/50 rounded-md" />
-          </GridRegion>
-        ))}
-        {draftRegion ? (
-          <GridRegion
-            top={draftRegion.top}
-            left={draftRegion.left}
-            height={draftRegion.height}
-            width={draftRegion.width}
-          >
-            <div
-              className={cn(
-                "w-full h-full rounded-md grid place-items-center",
-                hasDraftCollision ? "bg-red-500/15" : "bg-green-500/15",
-              )}
-            />
-          </GridRegion>
-        ) : null}
-      </GridLayer>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+        <div className="text-sm font-medium text-muted-foreground">Canvas</div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowGrid((prev) => !prev)}
+        >
+          {showGrid ? "Hide Grid" : "Show Grid"}
+        </Button>
+      </div>
+      <div ref={containerRef} className="relative overflow-y-auto flex-1">
+        {showGrid && (
+          <GridBackground
+            columnCount={columnCount}
+            rowCount={rowCount}
+            extraRowCount={EXTRA_ROW_BUFFER}
+            cellSize={cellSize}
+            gap={GAP}
+            padding={PADDING}
+          />
+        )}
+        <GridLayer
+          columnCount={columnCount}
+          rowCount={rowCount}
+          cellSize={cellSize}
+          containerRef={gridLayerRef}
+          className={cn(
+            "relative z-0",
+            showGrid ? "cursor-crosshair" : "cursor-default",
+          )}
+        >
+          {regions.map((region, index) => (
+            <GridRegion
+              key={`${region.top}-${region.left}-${region.height}-${region.width}-${index}`}
+              top={region.top}
+              left={region.left}
+              height={region.height}
+              width={region.width}
+            >
+              <div className="w-full h-full bg-accent/50 rounded-md" />
+            </GridRegion>
+          ))}
+          {draftRegion ? (
+            <GridRegion
+              top={draftRegion.top}
+              left={draftRegion.left}
+              height={draftRegion.height}
+              width={draftRegion.width}
+            >
+              <div
+                className={cn(
+                  "w-full h-full rounded-md grid place-items-center",
+                  hasDraftCollision ? "bg-red-500/15" : "bg-green-500/15",
+                )}
+              />
+            </GridRegion>
+          ) : null}
+        </GridLayer>
+      </div>
     </div>
   );
 }
