@@ -6,16 +6,17 @@ import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
 import { SelectedToolCursor } from "./selected-tool-cursor";
 
-import type { GridArea, GridPoint } from "@/lib/website-builder";
+import type { Entity, GridArea, GridPoint } from "@/lib/website-builder";
 
 type PageBuilderCanvasProps = {
-  selectedTool: string | null;
+  selectedTool: Entity<string, any> | null;
 };
 
 export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
   const [columnCount] = useState(12);
   const [rowCount, setRowCount] = useState(5);
   const [showGrid, setShowGrid] = useState(true);
+  const canDrawRegions = showGrid && !!selectedTool;
   const GAP = 8;
   const PADDING = 8;
 
@@ -199,6 +200,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (!canDrawRegions) return;
       event.preventDefault();
       pointer.x = event.clientX;
       pointer.y = event.clientY;
@@ -279,7 +281,7 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       window.removeEventListener("mouseup", finalizeDrag);
       stopAutoScroll();
     };
-  }, []);
+  }, [canDrawRegions]);
 
   return (
     <div className="flex flex-col h-full">
@@ -295,10 +297,11 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
       </div>
       <div ref={containerRef} className="relative overflow-y-auto flex-1">
         <SelectedToolCursor
-          visible={isPointerInCanvas}
+          visible={isPointerInCanvas && canDrawRegions}
           x={cursorPosition.x}
           y={cursorPosition.y}
-          label={selectedTool ?? ""}
+          label={selectedTool?.name ?? ""}
+          icon={selectedTool?.icon}
         />
         {showGrid && (
           <GridBackground
@@ -320,7 +323,10 @@ export function PageBuilderCanvas({ selectedTool }: PageBuilderCanvasProps) {
             setIsPointerInCanvas(true);
           }}
           onMouseLeave={() => setIsPointerInCanvas(false)}
-          className={cn("relative z-0", "cursor-crosshair")}
+          className={cn(
+            "relative z-0",
+            canDrawRegions ? "cursor-crosshair" : "cursor-default",
+          )}
         >
           {regions.map((region, index) => (
             <GridRegion
