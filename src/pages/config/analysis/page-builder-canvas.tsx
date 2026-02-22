@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
 
@@ -16,55 +17,82 @@ type GridSelection = {
 };
 
 export function PageBuilderCanvas() {
-  const columnCount = 12;
-  const rowCount = 5;
+  const [columnCount, setColumnCount] = useState(12);
+  const [rowCount, setRowCount] = useState(5);
+  const EXTRA_ROW_BUFFER = 3;
+  const GAP = 8;
+  const PADDING = 8;
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const gridLayerRef = useRef<HTMLDivElement>(null);
-  const isMouseDownRef = useRef(false);
-  const isDraggingRef = useRef(false);
-  const dragStartRef = useRef<GridPoint | null>(null);
-  const draftRegionRef = useRef<GridSelection | null>(null);
+  const dragStateRef = useRef<"idle" | "pending" | "dragging">("idle");
   const [regions, setRegions] = useState<GridSelection[]>([]);
   const [draftRegion, setDraftRegion] = useState<GridSelection | null>(null);
+  const [cellSize, setCellSize] = useState(0);
 
   useEffect(() => {
-    draftRegionRef.current = draftRegion;
-  }, [draftRegion]);
+    const container = gridLayerRef.current;
+    if (!container) return;
 
-  const getCellFromTarget = (target: EventTarget | null): GridPoint | null => {
-    if (!(target instanceof HTMLElement)) {
-      return null;
-    }
+    const computeCellSize = () => {
+      const width = container.clientWidth;
+      const size =
+        (width - 2 * PADDING - (columnCount - 1) * GAP) / columnCount;
+      setCellSize(Math.max(0, size));
+    };
 
-    const cell = target.closest<HTMLElement>("[data-grid-cell='true']");
+    computeCellSize();
 
-    if (!cell) {
-      return null;
-    }
+    const observer = new ResizeObserver(computeCellSize);
+    observer.observe(container);
 
-    const top = Number(cell.dataset.top);
-    const left = Number(cell.dataset.left);
+    return () => observer.disconnect();
+  }, [columnCount, GAP, PADDING]);
 
-    if (!Number.isFinite(top) || !Number.isFinite(left)) {
-      return null;
-    }
+  const getCellFromPointer = useCallback(
+    (
+      clientX: number,
+      clientY: number,
+      clampToGrid = false,
+    ): GridPoint | null => {
+      const container = gridLayerRef.current;
+      if (!container || cellSize <= 0) return null;
 
-    return { top, left };
-  };
+      const rect = container.getBoundingClientRect();
+      let x = clientX - rect.left - PADDING;
+      let y = clientY - rect.top - PADDING;
 
-  const getCellFromPointer = (event: MouseEvent): GridPoint | null => {
-    const directCell = getCellFromTarget(event.target);
+      const stride = cellSize + GAP;
 
-    if (directCell) {
-      return directCell;
-    }
+      if (clampToGrid) {
+        x = Math.max(0, Math.min(x, columnCount * stride - GAP));
+        y = Math.max(0, Math.min(y, rowCount * stride - GAP));
+      }
 
-    const elementUnderPointer = document.elementFromPoint(
-      event.clientX,
-      event.clientY,
-    );
+      const col = Math.floor(x / stride) + 1;
+      const row = Math.floor(y / stride) + 1;
 
-    return getCellFromTarget(elementUnderPointer);
-  };
+      if (col < 1 || col > columnCount || row < 1 || row > rowCount) {
+        return null;
+      }
+
+      if (!clampToGrid) {
+        const xInCell = x - (col - 1) * stride;
+        const yInCell = y - (row - 1) * stride;
+        if (
+          xInCell < 0 ||
+          xInCell > cellSize ||
+          yInCell < 0 ||
+          yInCell > cellSize
+        ) {
+          return null;
+        }
+      }
+
+      return { top: row, left: col };
+    },
+    [cellSize, rowCount, columnCount],
+  );
 
   const getSelectionFromPoints = (
     start: GridPoint,
@@ -108,101 +136,167 @@ export function PageBuilderCanvas() {
     draftRegion !== null ? doesRegionCollide(draftRegion, regions) : false;
 
   useEffect(() => {
-    const parent = gridLayerRef.current;
-
-    if (!parent) {
-      return;
+    if (draftRegion) {
+      const bottomRow = draftRegion.top + draftRegion.height - 1;
+      if (bottomRow >= rowCount - EXTRA_ROW_BUFFER) {
+        setRowCount((prev) => Math.max(prev, bottomRow + EXTRA_ROW_BUFFER));
+      }
     }
+  }, [draftRegion, rowCount, EXTRA_ROW_BUFFER]);
 
-    const handleMouseDown = (event: MouseEvent) => {
-      isMouseDownRef.current = true;
-      event.preventDefault();
+  const getCellFromPointerRef = useRef(getCellFromPointer);
+  useEffect(() => {
+    getCellFromPointerRef.current = getCellFromPointer;
+  }, [getCellFromPointer]);
 
-      const start = getCellFromTarget(event.target);
+  useEffect(() => {
+    const parent = gridLayerRef.current;
+    const container = containerRef.current;
+    if (!parent || !container) return;
 
-      if (!start) {
+    const EDGE_THRESHOLD = 100;
+    const SCROLL_SPEED = 10;
+
+    let scrollFrame: number | null = null;
+    let dragStart: GridPoint | null = null;
+    const pointer = { x: 0, y: 0 };
+
+    const startAutoScroll = () => {
+      if (scrollFrame !== null) return;
+      scrollFrame = requestAnimationFrame(autoScroll);
+    };
+
+    const stopAutoScroll = () => {
+      if (scrollFrame === null) return;
+      cancelAnimationFrame(scrollFrame);
+      scrollFrame = null;
+    };
+
+    const autoScroll = () => {
+      if (dragStateRef.current === "idle") {
+        scrollFrame = null;
         return;
       }
 
-      isDraggingRef.current = true;
-      dragStartRef.current = start;
-      setDraftRegion(getSelectionFromPoints(start, start));
+      const rect = container.getBoundingClientRect();
+      let scrolled = false;
+
+      if (pointer.y < rect.top + EDGE_THRESHOLD) {
+        container.scrollTop -= SCROLL_SPEED;
+        scrolled = true;
+      } else if (pointer.y > rect.bottom - EDGE_THRESHOLD) {
+        container.scrollTop += SCROLL_SPEED;
+        scrolled = true;
+      }
+
+      if (scrolled) {
+        const cell = getCellFromPointerRef.current(pointer.x, pointer.y, true);
+        if (cell) {
+          if (dragStateRef.current === "pending") {
+            dragStateRef.current = "dragging";
+            dragStart = cell;
+            setDraftRegion(getSelectionFromPoints(cell, cell));
+          } else if (dragStart) {
+            setDraftRegion(getSelectionFromPoints(dragStart, cell));
+          }
+        }
+      }
+
+      scrollFrame = requestAnimationFrame(autoScroll);
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      event.preventDefault();
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+
+      const start = getCellFromPointerRef.current(event.clientX, event.clientY);
+      if (start) {
+        dragStateRef.current = "dragging";
+        dragStart = start;
+        setDraftRegion(getSelectionFromPoints(start, start));
+      } else {
+        dragStateRef.current = "pending";
+      }
+
+      startAutoScroll();
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      if (!isMouseDownRef.current) {
-        return;
-      }
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
 
-      const current = getCellFromPointer(event);
+      if (dragStateRef.current === "idle") return;
 
-      if (!current) {
-        return;
-      }
+      event.preventDefault();
+      const current = getCellFromPointerRef.current(
+        event.clientX,
+        event.clientY,
+        true,
+      );
+      if (!current) return;
 
-      if (!isDraggingRef.current || !dragStartRef.current) {
-        event.preventDefault();
-        isDraggingRef.current = true;
-        dragStartRef.current = current;
+      if (dragStateRef.current === "pending") {
+        dragStateRef.current = "dragging";
+        dragStart = current;
         setDraftRegion(getSelectionFromPoints(current, current));
         return;
       }
 
-      event.preventDefault();
-
-      setDraftRegion(getSelectionFromPoints(dragStartRef.current, current));
+      if (dragStart) {
+        setDraftRegion(getSelectionFromPoints(dragStart, current));
+      }
     };
 
     const finalizeDrag = () => {
-      isMouseDownRef.current = false;
+      const wasDragging = dragStateRef.current === "dragging";
+      dragStateRef.current = "idle";
+      dragStart = null;
+      stopAutoScroll();
 
-      if (!isDraggingRef.current) {
-        return;
-      }
+      if (!wasDragging) return;
 
-      setRegions((previous) =>
-        draftRegionRef.current &&
-        !doesRegionCollide(draftRegionRef.current, previous)
-          ? [...previous, draftRegionRef.current]
-          : previous,
-      );
-      setDraftRegion(null);
-      isDraggingRef.current = false;
-      dragStartRef.current = null;
-    };
-
-    const handleDragStart = (event: DragEvent) => {
-      event.preventDefault();
+      setDraftRegion((currentDraft) => {
+        if (currentDraft) {
+          setRegions((previous) =>
+            !doesRegionCollide(currentDraft, previous)
+              ? [...previous, currentDraft]
+              : previous,
+          );
+        }
+        return null;
+      });
     };
 
     parent.addEventListener("mousedown", handleMouseDown);
-    parent.addEventListener("mousemove", handleMouseMove);
-    parent.addEventListener("mouseup", finalizeDrag);
-    parent.addEventListener("mouseleave", finalizeDrag);
-    parent.addEventListener("dragstart", handleDragStart);
+    parent.addEventListener("dragstart", (e) => e.preventDefault());
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", finalizeDrag);
 
     return () => {
       parent.removeEventListener("mousedown", handleMouseDown);
-      parent.removeEventListener("mousemove", handleMouseMove);
-      parent.removeEventListener("mouseup", finalizeDrag);
-      parent.removeEventListener("mouseleave", finalizeDrag);
-      parent.removeEventListener("dragstart", handleDragStart);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", finalizeDrag);
+      stopAutoScroll();
     };
   }, []);
 
   return (
-    <div className="relative overflow-y-auto h-full">
-      <GridLayer
+    <div ref={containerRef} className="relative overflow-y-auto h-full">
+      <GridBackground
         columnCount={columnCount}
         rowCount={rowCount}
-        showBoxes
-        containerRef={gridLayerRef}
-        className="cursor-crosshair"
+        extraRowCount={EXTRA_ROW_BUFFER}
+        cellSize={cellSize}
+        gap={GAP}
+        padding={PADDING}
       />
       <GridLayer
         columnCount={columnCount}
         rowCount={rowCount}
-        className="absolute inset-0 pointer-events-none"
+        cellSize={cellSize}
+        containerRef={gridLayerRef}
+        className="cursor-crosshair relative z-0"
       >
         {regions.map((region, index) => (
           <GridRegion
@@ -216,12 +310,6 @@ export function PageBuilderCanvas() {
             <div className="w-full h-full bg-accent/50 rounded-md" />
           </GridRegion>
         ))}
-      </GridLayer>
-      <GridLayer
-        columnCount={columnCount}
-        rowCount={rowCount}
-        className="absolute inset-0 pointer-events-none"
-      >
         {draftRegion ? (
           <GridRegion
             top={draftRegion.top}
