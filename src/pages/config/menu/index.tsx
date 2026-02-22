@@ -38,7 +38,7 @@ import { Node } from "./node";
 import { TreeNode } from "./tree-node";
 
 const filterMenuForRender = (nodes: MenuTreeNode[]): RadialMenuNode[] =>
-  nodes.map(({ type, includeForm, ...node }) => ({
+  nodes.map(({ type, ...node }) => ({
     ...node,
     children: node.children ? filterMenuForRender(node.children) : undefined,
   }));
@@ -191,7 +191,6 @@ export default function MenuEditor() {
                     id: nanoid(),
                     label: "New Item",
                     type: "instantaneous",
-                    includeForm: false,
                   },
                 ]);
               }}
@@ -213,7 +212,6 @@ export default function MenuEditor() {
                   id: nanoid(),
                   label: "New Item",
                   type: "instantaneous",
-                  includeForm: false,
                 }),
               );
               setExpandedNodes((prev) => new Set(prev).add(id));

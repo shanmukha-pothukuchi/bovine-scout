@@ -7,17 +7,18 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { CalculationsPanel } from "./calculations-panel";
+import { PageBuilderCanvas } from "./page-builder-canvas";
 
 export default function Analysis() {
-  const [calculationContext, setCalculationContext] = useState<string | null>(
-    "match",
-  );
-
   const calculationContexts = new Map([
     ["match", "Match"],
     ["team", "Team"],
     ["pick_list", "Pick List"],
   ]);
+
+  const [calculationContext, setCalculationContext] = useState<string | null>(
+    calculationContexts.keys().next().value || null,
+  );
 
   return (
     <div className="h-full flex">
@@ -47,7 +48,9 @@ export default function Analysis() {
           <CalculationsPanel />
         </div>
       </div>
-      <div className="flex-1"></div>
+      <div className="flex-1">
+        <PageBuilderCanvas />
+      </div>
       <div className="w-72 h-full bg-sidebar p-2 overflow-y-auto border-l border-border"></div>
     </div>
   );

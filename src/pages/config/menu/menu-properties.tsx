@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { isLeafNode } from "@/lib/utils/tree";
 import { CaretLeftIcon } from "@phosphor-icons/react";
 import type { MenuTreeNode } from "../context";
@@ -61,24 +60,11 @@ export function MenuProperties({
                   : "Instantaneous"}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent align="start">
               <SelectItem value="instantaneous">Instantaneous</SelectItem>
               <SelectItem value="duration">Duration</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      )}
-
-      {isLeafNode(selectedNode) && (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="includeForm">Include Form</Label>
-          <Switch
-            id="includeForm"
-            checked={selectedNode.includeForm ?? false}
-            onCheckedChange={(checked) =>
-              onUpdateProperty("includeForm", checked)
-            }
-          />
         </div>
       )}
     </div>
