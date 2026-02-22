@@ -92,7 +92,13 @@ export function FormEditor({
                 ([attrName, attrState]) => {
                   const Component =
                     attributeRegistry.current[attrState.name].wrapper;
-                  return <Component key={attrName} entityId={selected} />;
+                  return (
+                    <Component
+                      key={attrName}
+                      entityId={selected}
+                      attributeKey={attrName}
+                    />
+                  );
                 },
               );
             })()}

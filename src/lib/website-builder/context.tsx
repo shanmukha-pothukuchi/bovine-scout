@@ -2,14 +2,15 @@ import { createContext, useContext } from "react";
 import type {
   AnyAttributeEntry,
   AnyEntityEntry,
+  BuilderState,
   Entity,
   EntityStateData,
-  FormState,
+  GridArea,
 } from "./types";
 
-export interface FormContextValue {
+export interface BuilderContextValue {
   // State
-  state: FormState;
+  state: BuilderState;
   isValid: boolean;
 
   // Registries
@@ -20,16 +21,13 @@ export interface FormContextValue {
   registerEntity: <
     TName extends string,
     TAttributes extends Record<string, AnyAttributeEntry>,
-    TValue,
   >(
     entityId: string,
-    entity: Entity<TName, TAttributes, TValue>,
+    entity: Entity<TName, TAttributes>,
   ) => void;
   deregisterEntity: (entityId: string) => void;
   getEntityState: (entityId: string) => EntityStateData | undefined;
-  setEntityValue: (entityId: string, value: unknown) => void;
-  setEntityError: (entityId: string, error: string | null) => void;
-  validateEntity: (entityId: string) => Promise<void>;
+  setEntityRegion: (entityId: string, region: GridArea) => void;
 
   // Attribute management (by attributeKey)
   setAttributeValue: (
@@ -46,21 +44,20 @@ export interface FormContextValue {
 
   // Bulk operations
   validateAll: () => Promise<boolean>;
-  getValues: () => Record<string, unknown>;
-  resetValues: () => void;
+  getAttributeValues: (entityId: string) => Record<string, unknown> | undefined;
 }
 
-export const FormContext = createContext<FormContextValue | null>(null);
+export const BuilderContext = createContext<BuilderContextValue | null>(null);
 export const EntityContext = createContext<{ entityId: string } | null>(null);
 export const AttributeContext = createContext<{
   attributeKey: string;
   attributeName: string;
 } | null>(null);
 
-export function useFormContext() {
-  const context = useContext(FormContext);
+export function useBuilderContext() {
+  const context = useContext(BuilderContext);
   if (!context)
-    throw new Error("useFormContext must be used within a FormProvider");
+    throw new Error("useBuilderContext must be used within a BuilderProvider");
   return context;
 }
 

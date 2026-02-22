@@ -2,19 +2,18 @@ import { useCallback, useEffect } from "react";
 import {
   AttributeContext,
   EntityContext,
+  useBuilderContext,
   useEntityContext,
-  useFormContext,
 } from "./context";
-import {
-  type AnyAttributeEntry,
-  type Attribute,
-  type AttributeRegistryEntry,
-  type AttributeValues,
-  type AttributeWrapperProps,
-  type Entity,
-  type EntityRegistryEntry,
-  type EntityWrapperProps,
-  resolveEntityDefaultValue,
+import type {
+  AnyAttributeEntry,
+  Attribute,
+  AttributeRegistryEntry,
+  AttributeValues,
+  AttributeWrapperProps,
+  Entity,
+  EntityRegistryEntry,
+  EntityWrapperProps,
 } from "./types";
 
 export function makeAttribute<const TName extends string, TValue>(
@@ -25,7 +24,7 @@ export function makeAttribute<const TName extends string, TValue>(
     attributeKey,
     defaultAttributeState,
   }: AttributeWrapperProps) {
-    const formContext = useFormContext();
+    const builderContext = useBuilderContext();
     const entityContext = useEntityContext();
     const resolvedEntityId = entityId ?? entityContext?.entityId;
 
@@ -39,27 +38,31 @@ export function makeAttribute<const TName extends string, TValue>(
     const setValue = useCallback(
       (value: TValue) => {
         if (resolvedEntityId) {
-          formContext.setAttributeValue(resolvedEntityId, attributeKey, value);
+          builderContext.setAttributeValue(
+            resolvedEntityId,
+            attributeKey,
+            value,
+          );
         }
       },
-      [formContext, resolvedEntityId],
+      [builderContext, resolvedEntityId],
     );
 
     const validateValue = useCallback(async () => {
       if (resolvedEntityId) {
-        await formContext.validateAttribute(resolvedEntityId, attributeKey);
+        await builderContext.validateAttribute(resolvedEntityId, attributeKey);
       }
-    }, [formContext, resolvedEntityId]);
+    }, [builderContext, resolvedEntityId]);
 
     const resetError = useCallback(() => {
       if (resolvedEntityId) {
-        formContext.setAttributeError(resolvedEntityId, attributeKey, null);
+        builderContext.setAttributeError(resolvedEntityId, attributeKey, null);
       }
-    }, [formContext, resolvedEntityId]);
+    }, [builderContext, resolvedEntityId]);
 
     if (!resolvedEntityId) return null;
 
-    const entityState = formContext.getEntityState(resolvedEntityId);
+    const entityState = builderContext.getEntityState(resolvedEntityId);
     const attributeState =
       entityState?.attributes[attributeKey] ?? defaultAttributeState;
 
@@ -86,23 +89,22 @@ export function makeAttribute<const TName extends string, TValue>(
 export function makeEntity<
   const TName extends string,
   const TAttributes extends Record<string, AnyAttributeEntry>,
-  TValue,
 >(
-  options: Entity<TName, TAttributes, TValue>,
-): EntityRegistryEntry<TName, TAttributes, TValue> {
+  options: Entity<TName, TAttributes>,
+): EntityRegistryEntry<TName, TAttributes> {
   function EntityWrapper({
     entityId,
     defaultEntityState,
     disabled,
   }: EntityWrapperProps) {
-    const formContext = useFormContext();
+    const builderContext = useBuilderContext();
 
     useEffect(() => {
-      formContext.registerEntity(entityId, options);
-    }, [formContext, entityId]);
+      builderContext.registerEntity(entityId, options);
+    }, [builderContext, entityId]);
 
     const entityState =
-      formContext.getEntityState(entityId) ?? defaultEntityState;
+      builderContext.getEntityState(entityId) ?? defaultEntityState;
 
     if (!entityState) return null;
 
@@ -114,40 +116,9 @@ export function makeEntity<
       }),
     ) as AttributeValues<TAttributes>;
 
-    const setValue = useCallback(
-      (newValue: TValue) => {
-        formContext.setEntityValue(entityId, newValue);
-      },
-      [formContext, entityId],
-    );
-
-    const validateValue = useCallback(async () => {
-      await formContext.validateEntity(entityId);
-    }, [formContext, entityId]);
-
-    const resetError = useCallback(() => {
-      formContext.setEntityError(entityId, null);
-    }, [formContext, entityId]);
-
-    const resolvedValue =
-      (entityState.value as TValue) ??
-      resolveEntityDefaultValue(
-        options.defaultValue,
-        entityState.attributes,
-        options.attributes,
-      );
-
     return (
       <EntityContext.Provider value={{ entityId }}>
-        <options.component
-          attributes={attributesProp}
-          value={resolvedValue}
-          setValue={setValue}
-          validateValue={validateValue}
-          error={entityState.error}
-          resetError={resetError}
-          disabled={disabled}
-        />
+        <options.component attributes={attributesProp} disabled={disabled} />
       </EntityContext.Provider>
     );
   }

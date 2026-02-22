@@ -16,25 +16,17 @@ export interface AttributeRegistryEntry<TName extends string, TValue> {
 export interface EntityRegistryEntry<
   TName extends string,
   TAttributes extends Record<string, AttributeRegistryEntry<string, any>>,
-  TValue,
 > {
-  readonly definition: Entity<TName, TAttributes, TValue>;
+  readonly definition: Entity<TName, TAttributes>;
   readonly wrapper: React.ComponentType<EntityWrapperProps>;
 }
 
 export type AnyAttributeEntry = AttributeRegistryEntry<string, any>;
-export type AnyEntityEntry = EntityRegistryEntry<string, any, any>;
+export type AnyEntityEntry = EntityRegistryEntry<string, any>;
 
 export type AttributeValues<T extends Record<string, AnyAttributeEntry>> = {
   [K in keyof T]: T[K]["definition"]["defaultValue"];
 };
-
-export type EntityDefaultValue<
-  TValue,
-  TAttributes extends Record<string, AnyAttributeEntry>,
-> =
-  | { type: "literal"; value: TValue }
-  | { type: "attribute"; value: keyof TAttributes & string };
 
 export interface Attribute<TName extends string, TValue> {
   name: TName;
@@ -48,17 +40,11 @@ export interface Attribute<TName extends string, TValue> {
 export interface Entity<
   TName extends string,
   TAttributes extends Record<string, AnyAttributeEntry>,
-  TValue,
 > {
   name: TName;
   icon: React.ComponentType<{ size?: number | string }>;
   attributes: TAttributes;
-  defaultValue: EntityDefaultValue<TValue, TAttributes>;
-  validate: (
-    value: TValue,
-    attributes: AttributeValues<TAttributes>,
-  ) => (TValue | null | undefined) | Promise<TValue | null | undefined>;
-  component: React.ComponentType<EntityComponentProps<TAttributes, TValue>>;
+  component: React.ComponentType<EntityComponentProps<TAttributes>>;
 }
 
 export interface AttributeComponentProps<TValue = unknown> {
@@ -72,15 +58,19 @@ export interface AttributeComponentProps<TValue = unknown> {
 
 export interface EntityComponentProps<
   TAttributes extends Record<string, AnyAttributeEntry>,
-  TValue = unknown,
 > {
   attributes: AttributeValues<TAttributes>;
-  value: TValue;
-  setValue: (value: TValue) => void;
-  validateValue: () => Promise<void>;
-  error: string | null;
-  resetError: () => void;
   disabled?: boolean;
+}
+
+export interface GridPoint {
+  top: number;
+  left: number;
+}
+
+export interface GridArea {
+  start: GridPoint;
+  end: GridPoint;
 }
 
 export interface AttributeStateData {
@@ -91,12 +81,11 @@ export interface AttributeStateData {
 
 export interface EntityStateData {
   name: string;
-  value: unknown;
-  error: string | null;
+  region: GridArea;
   attributes: Record<string, AttributeStateData>;
 }
 
-export interface FormState {
+export interface BuilderState {
   [entityId: string]: EntityStateData;
 }
 
@@ -110,30 +99,4 @@ export interface EntityWrapperProps {
   entityId: string;
   defaultEntityState?: EntityStateData;
   disabled?: boolean;
-}
-
-export function resolveEntityDefaultValue<
-  TValue,
-  TAttributes extends Record<string, AnyAttributeEntry>,
->(
-  defaultValue: EntityDefaultValue<TValue, TAttributes>,
-  attributeStates: Record<string, AttributeStateData>,
-  attributeDefinitions: TAttributes,
-): TValue {
-  if (defaultValue.type === "literal") {
-    return defaultValue.value;
-  }
-
-  const attrKey = defaultValue.value;
-
-  const attrState = attributeStates[attrKey];
-  if (attrState !== undefined) return attrState.value as TValue;
-
-  const attrEntry = attributeDefinitions[attrKey];
-  if (attrEntry !== undefined)
-    return attrEntry.definition.defaultValue as TValue;
-
-  throw new Error(
-    `resolveEntityDefaultValue: attribute key "${String(attrKey)}" not found in attribute definitions`,
-  );
 }

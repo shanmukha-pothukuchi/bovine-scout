@@ -5,17 +5,7 @@ import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
 
-type GridPoint = {
-  top: number;
-  left: number;
-};
-
-type GridSelection = {
-  top: number;
-  left: number;
-  height: number;
-  width: number;
-};
+import type { GridArea, GridPoint } from "@/lib/website-builder";
 
 export function PageBuilderCanvas() {
   const [columnCount] = useState(12);
@@ -26,12 +16,12 @@ export function PageBuilderCanvas() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const gridLayerRef = useRef<HTMLDivElement>(null);
-  const [regions, setRegions] = useState<GridSelection[]>([]);
+  const [regions, setRegions] = useState<GridArea[]>([]);
   const regionsRef = useRef(regions);
   useEffect(() => {
     regionsRef.current = regions;
   }, [regions]);
-  const [draftRegion, setDraftRegion] = useState<GridSelection | null>(null);
+  const [draftRegion, setDraftRegion] = useState<GridArea | null>(null);
   const [cellSize, setCellSize] = useState(0);
 
   useEffect(() => {
@@ -90,36 +80,26 @@ export function PageBuilderCanvas() {
   const getSelectionFromPoints = (
     start: GridPoint,
     end: GridPoint,
-  ): GridSelection => {
-    const top = Math.min(start.top, end.top);
-    const left = Math.min(start.left, end.left);
-    const bottom = Math.max(start.top, end.top);
-    const right = Math.max(start.left, end.left);
-
+  ): GridArea => {
     return {
-      top,
-      left,
-      height: bottom - top + 1,
-      width: right - left + 1,
+      start: {
+        top: Math.min(start.top, end.top),
+        left: Math.min(start.left, end.left),
+      },
+      end: {
+        top: Math.max(start.top, end.top),
+        left: Math.max(start.left, end.left),
+      },
     };
   };
 
-  const doesRegionCollide = (
-    region: GridSelection,
-    existingRegions: GridSelection[],
-  ) => {
-    const regionBottom = region.top + region.height - 1;
-    const regionRight = region.left + region.width - 1;
-
-    return existingRegions.some((existingRegion) => {
-      const existingBottom = existingRegion.top + existingRegion.height - 1;
-      const existingRight = existingRegion.left + existingRegion.width - 1;
-
+  const doesRegionCollide = (region: GridArea, existingRegions: GridArea[]) => {
+    return existingRegions.some((existing) => {
       const isSeparated =
-        regionRight < existingRegion.left ||
-        existingRight < region.left ||
-        regionBottom < existingRegion.top ||
-        existingBottom < region.top;
+        region.end.left < existing.start.left ||
+        existing.end.left < region.start.left ||
+        region.end.top < existing.start.top ||
+        existing.end.top < region.start.top;
 
       return !isSeparated;
     });
@@ -130,7 +110,7 @@ export function PageBuilderCanvas() {
 
   useEffect(() => {
     if (draftRegion) {
-      const bottomRow = draftRegion.top + draftRegion.height - 1;
+      const bottomRow = draftRegion.end.top;
       if (bottomRow >= rowCount - 1) {
         setRowCount((prev) => Math.max(prev, bottomRow + 1));
       }
@@ -203,10 +183,10 @@ export function PageBuilderCanvas() {
     const isPointInAnyRegion = (point: GridPoint): boolean => {
       return regionsRef.current.some((region) => {
         return (
-          point.left >= region.left &&
-          point.left < region.left + region.width &&
-          point.top >= region.top &&
-          point.top < region.top + region.height
+          point.left >= region.start.left &&
+          point.left <= region.end.left &&
+          point.top >= region.start.top &&
+          point.top <= region.end.top
         );
       });
     };
@@ -270,11 +250,11 @@ export function PageBuilderCanvas() {
 
       if (!wasDragging) return;
 
-      setDraftRegion((currentDraft) => {
-        if (currentDraft) {
-          setRegions((previous) =>
-            !doesRegionCollide(currentDraft, previous)
-              ? [...previous, currentDraft]
+      setDraftRegion((draft: GridArea | null): GridArea | null => {
+        if (draft) {
+          setRegions((previous: GridArea[]): GridArea[] =>
+            !doesRegionCollide(draft, previous)
+              ? [...previous, draft]
               : previous,
           );
         }
@@ -330,21 +310,21 @@ export function PageBuilderCanvas() {
         >
           {regions.map((region, index) => (
             <GridRegion
-              key={`${region.top}-${region.left}-${region.height}-${region.width}-${index}`}
-              top={region.top}
-              left={region.left}
-              height={region.height}
-              width={region.width}
+              key={`${region.start.top}-${region.start.left}-${region.end.top}-${region.end.left}-${index}`}
+              top={region.start.top}
+              left={region.start.left}
+              height={region.end.top - region.start.top + 1}
+              width={region.end.left - region.start.left + 1}
             >
               <div className="w-full h-full bg-accent/50 rounded-md" />
             </GridRegion>
           ))}
           {draftRegion ? (
             <GridRegion
-              top={draftRegion.top}
-              left={draftRegion.left}
-              height={draftRegion.height}
-              width={draftRegion.width}
+              top={draftRegion.start.top}
+              left={draftRegion.start.left}
+              height={draftRegion.end.top - draftRegion.start.top + 1}
+              width={draftRegion.end.left - draftRegion.start.left + 1}
             >
               <div
                 className={cn(
