@@ -13,3 +13,4 @@ export const availableEntities = componentCategories
 
 export const DATA_ATTR_GRID_REGION = "data-grid-region";
 export const DATA_ATTR_RESIZE_HANDLE = "data-resize-handle";
+export const DATA_ATTR_DELETE_HANDLE = "data-delete-handle";

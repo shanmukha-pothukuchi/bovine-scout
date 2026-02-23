@@ -12,7 +12,11 @@ import { GridBackground } from "./grid-background";
 import { GridLayer } from "./grid-layer";
 import { GridRegion } from "./grid-region";
 import { SelectedToolCursor } from "./selected-tool-cursor";
-import { DATA_ATTR_GRID_REGION, DATA_ATTR_RESIZE_HANDLE } from "./constants";
+import {
+  DATA_ATTR_DELETE_HANDLE,
+  DATA_ATTR_GRID_REGION,
+  DATA_ATTR_RESIZE_HANDLE,
+} from "./constants";
 
 import {
   useBuilderContext,
@@ -45,6 +49,7 @@ export function PageBuilderCanvas({
   const {
     state: builderEntities,
     registerEntity,
+    deregisterEntity,
     setEntityRegion,
     entityRegistry,
   } = useBuilderContext();
@@ -97,6 +102,7 @@ export function PageBuilderCanvas({
 
   const builderStateRef = useRef({
     isRegionDrawingEnabled,
+    isGridVisible,
     selectedTool,
     entityRegions,
     gridRowCount,
@@ -107,6 +113,7 @@ export function PageBuilderCanvas({
   });
   builderStateRef.current = {
     isRegionDrawingEnabled,
+    isGridVisible,
     selectedTool,
     entityRegions,
     gridRowCount,
@@ -382,6 +389,8 @@ export function PageBuilderCanvas({
       e.stopPropagation();
       e.preventDefault();
 
+      if (!builderStateRef.current.isGridVisible) return;
+
       const entityState = builderStateRef.current.builderEntities[entityId];
       if (!entityState) return;
 
@@ -392,7 +401,8 @@ export function PageBuilderCanvas({
         originalRegion: entityState.region,
       };
 
-      const startCell = getCellFromPointer(e.clientX, e.clientY);
+      const startCell =
+        getCellFromPointer(e.clientX, e.clientY) ?? entityState.region.start;
       interactionStateRef.current.startCell = startCell;
 
       scrollPointerPositionRef.current = { x: e.clientX, y: e.clientY };
@@ -523,6 +533,8 @@ export function PageBuilderCanvas({
     (entityId: string, e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
+
+      if (!builderStateRef.current.isGridVisible) return;
 
       const entityState = builderStateRef.current.builderEntities[entityId];
       if (!entityState) return;
@@ -679,12 +691,23 @@ export function PageBuilderCanvas({
                 height={region.end.top - region.start.top + 1}
                 width={region.end.left - region.start.left + 1}
                 className={cn(
-                  "rounded-md overflow-clip group cursor-grab",
+                  "rounded-md overflow-clip group",
+                  isGridVisible ? "cursor-grab" : "cursor-default",
                   isBeingInteracted && "opacity-30",
                 )}
                 selected={selectedEntityId === entityId}
                 onSelect={() => setSelectedEntityId(entityId)}
+                onDelete={
+                  isGridVisible ? () => deregisterEntity(entityId) : undefined
+                }
                 onMouseDown={(e) => {
+                  if (
+                    (e.target as HTMLElement).closest(
+                      `[${DATA_ATTR_DELETE_HANDLE}]`,
+                    )
+                  ) {
+                    return;
+                  }
                   if (
                     (e.target as HTMLElement).closest(
                       `[${DATA_ATTR_RESIZE_HANDLE}]`,
