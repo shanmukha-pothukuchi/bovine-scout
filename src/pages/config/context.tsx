@@ -1,4 +1,5 @@
 import type { TreeNode } from "@/lib/utils";
+import type Environment from "@/lib/bovine-basic/environment";
 import React, {
   createContext,
   useContext,
@@ -20,6 +21,8 @@ export interface ConfigContextType {
   gamePeriods: string[];
   formStructure: FormStructure;
   setFormStructure: React.Dispatch<React.SetStateAction<FormStructure>>;
+  expressionEnvironment: Environment | null;
+  setExpressionEnvironment: (env: Environment | null) => void;
 }
 
 const ConfigContext = createContext<ConfigContextType | null>(null);
@@ -111,6 +114,9 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     rows: [],
   });
 
+  const [expressionEnvironment, setExpressionEnvironment] =
+    useState<Environment | null>(null);
+
   return (
     <ConfigContext.Provider
       value={{
@@ -119,6 +125,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         gamePeriods,
         formStructure,
         setFormStructure,
+        expressionEnvironment,
+        setExpressionEnvironment,
       }}
     >
       {children}

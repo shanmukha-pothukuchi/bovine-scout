@@ -27,6 +27,7 @@ import type { Expr } from "@/lib/bovine-basic/ast";
 import Parser from "@/lib/bovine-basic/parser";
 import { createGlobalEnvironment } from "@/lib/bovine-basic/stdlib";
 import { runtimeValToString } from "@/lib/bovine-basic/values";
+import { useConfig } from "../context";
 
 const CALCULATION_CONTEXTS: [CalculationContextId, string][] = [
   ["match", "Match"],
@@ -52,6 +53,7 @@ function AnalysisContainer() {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
   const { getEntityState, attributeRegistry } = useBuilderContext();
+  const { setExpressionEnvironment } = useConfig();
 
   const cellParserRef = useRef(new Parser());
   const [cellResults, setCellResults] = useState<CellResult[]>([]);
@@ -77,7 +79,8 @@ function AnalysisContainer() {
     }
 
     setCellResults(results);
-  }, [cellsByContext, calculationContext]);
+    setExpressionEnvironment(env);
+  }, [cellsByContext, calculationContext, setExpressionEnvironment]);
 
   const setCellValue = useCallback(
     (contextId: CalculationContextId, index: number, value: string) => {

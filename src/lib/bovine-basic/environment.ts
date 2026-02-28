@@ -56,4 +56,14 @@ export default class Environment {
 
     return this.parent.resolve(varName);
   }
+
+  public getVariableNames(): string[] {
+    const names = new Set<string>(this.variables.keys());
+    if (this.parent) {
+      for (const name of this.parent.getVariableNames()) {
+        names.add(name);
+      }
+    }
+    return [...names];
+  }
 }
