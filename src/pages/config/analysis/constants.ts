@@ -1,5 +1,7 @@
 import { textEntity } from "@/components/website-builder/entities/text";
 
+export type CalculationContextId = "match" | "team" | "pick_list";
+
 export const componentCategories = [
   {
     name: "Content",

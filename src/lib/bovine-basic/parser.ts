@@ -1,6 +1,7 @@
-import {
+import type {
   Program,
   Expr,
+  UnaryExpr,
   BinaryExpr,
   NumericLiteral,
   StringLiteral,
@@ -21,7 +22,7 @@ import {
   WhileExpr,
   ForExpr,
 } from "./ast";
-import { tokenize, Token, TokenType } from "./lexer";
+import { tokenize, type Token, type TokenType } from "./lexer";
 
 export default class Parser {
   private tokens: Token[] = [];
@@ -49,6 +50,15 @@ export default class Parser {
 
   private notEOF(): boolean {
     return this.at().type !== "EOF";
+  }
+
+  /** Consume an OpenParen and return true if one is present; return false if not. */
+  private tryEatOpenParen(): boolean {
+    if (this.check("OpenParen")) {
+      this.eat();
+      return true;
+    }
+    return false;
   }
 
   public produceAST(src: string): Program {
@@ -170,7 +180,12 @@ export default class Parser {
         const args: Expr[] = [];
         while (!this.check("CloseParen") && this.notEOF()) {
           args.push(this.parseExpr());
-          if (this.check("Comma")) this.eat();
+          if (this.check("Comma")) {
+            this.eat();
+            if (this.check("CloseParen")) {
+              throw new Error("Trailing comma in function call arguments");
+            }
+          }
         }
         this.expect("CloseParen", "Expected ')' after function call arguments");
         expr = { type: "CallExpr", callee: expr, args } as CallExpr;
@@ -263,6 +278,12 @@ export default class Parser {
 
       case "For":
         return this.parseForExpr();
+
+      case "Not": {
+        this.eat();
+        const operand = this.parseCallMemberIndex();
+        return { type: "UnaryExpr", operator: "not", operand } as UnaryExpr;
+      }
 
       case "BinaryOperator":
         if (tok.value === "-") {
@@ -391,9 +412,9 @@ export default class Parser {
 
   private parseIfExpr(): IfExpr {
     this.expect("If", "Expected 'if'");
-    this.expect("OpenParen", "Expected '(' after 'if'");
+    const hasParen = this.tryEatOpenParen();
     const condition = this.parseExpr();
-    this.expect("CloseParen", "Expected ')' after if condition");
+    if (hasParen) this.expect("CloseParen", "Expected ')' after if condition");
     this.expect("Then", "Expected 'then' after if condition");
     const consequent = this.parseExpr();
 
@@ -408,9 +429,9 @@ export default class Parser {
 
   private parseMatchExpr(): MatchExpr {
     this.expect("Match", "Expected 'match'");
-    this.expect("OpenParen", "Expected '(' after 'match'");
+    const hasParen = this.tryEatOpenParen();
     const subject = this.parseExpr();
-    this.expect("CloseParen", "Expected ')' after match subject");
+    if (hasParen) this.expect("CloseParen", "Expected ')' after match subject");
     this.expect("OpenBrace", "Expected '{' to start match arms");
 
     const arms: MatchArm[] = [];
@@ -435,20 +456,20 @@ export default class Parser {
 
   private parseWhileExpr(): WhileExpr {
     this.expect("While", "Expected 'while'");
-    this.expect("OpenParen", "Expected '(' after 'while'");
+    const hasParen = this.tryEatOpenParen();
     const condition = this.parseExpr();
-    this.expect("CloseParen", "Expected ')' after while condition");
+    if (hasParen) this.expect("CloseParen", "Expected ')' after while condition");
     const body = this.parseBlock();
     return { type: "WhileExpr", condition, body } as WhileExpr;
   }
 
   private parseForExpr(): ForExpr {
     this.expect("For", "Expected 'for'");
-    this.expect("OpenParen", "Expected '(' after 'for'");
+    const hasParen = this.tryEatOpenParen();
     const variable = this.expect("Identifier", "Expected loop variable name").value;
     this.expect("In", "Expected 'in' in for loop");
     const iterable = this.parseExpr();
-    this.expect("CloseParen", "Expected ')' after for loop iterable");
+    if (hasParen) this.expect("CloseParen", "Expected ')' after for loop iterable");
     const body = this.parseBlock();
     return { type: "ForExpr", variable, iterable, body } as ForExpr;
   }

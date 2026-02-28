@@ -1,8 +1,8 @@
 import Environment from "./environment";
 import {
-  RuntimeVal,
-  ArrayVal,
-  NumberVal,
+  type RuntimeVal,
+  type ArrayVal,
+  type NumberVal,
   MAKE_DICT,
   MAKE_NATIVE_FN,
   MAKE_NUMBER,
@@ -65,16 +65,28 @@ const statRange = MAKE_NATIVE_FN((args) => {
   return MAKE_NUMBER(Math.max(...nums) - Math.min(...nums));
 });
 
+// Descriptor of all top-level builtins and their members.
+// Extend this to add new builtin namespaces or functions.
+export const STDLIB: Record<string, Record<string, RuntimeVal>> = {
+  stat: {
+    mean: statMean,
+    median: statMedian,
+    mode: statMode,
+    range: statRange,
+  },
+};
+
+export const STDLIB_MEMBER_NAMES: string[] = Object.entries(STDLIB).flatMap(
+  ([ns, members]) => Object.keys(members).map((fn) => `${ns}.${fn}`),
+);
+
 export function createGlobalEnvironment(): Environment {
   const env = new Environment();
 
-  const statEntries = new Map<string, RuntimeVal>();
-  statEntries.set("mean", statMean);
-  statEntries.set("median", statMedian);
-  statEntries.set("mode", statMode);
-  statEntries.set("range", statRange);
-
-  env.setVar("stat", MAKE_DICT(statEntries));
+  for (const [name, members] of Object.entries(STDLIB)) {
+    const entries = new Map<string, RuntimeVal>(Object.entries(members));
+    env.setVar(name, MAKE_DICT(entries));
+  }
 
   return env;
 }

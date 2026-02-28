@@ -13,21 +13,39 @@ import {
   type AnyEntityEntry,
 } from "@/lib/website-builder";
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CalculationsPanel } from "./calculations-panel";
-import { availableEntities, componentCategories } from "./constants";
+import type { CellResult } from "./cell";
+import {
+  availableEntities,
+  componentCategories,
+  type CalculationContextId,
+} from "./constants";
 import { PageBuilderCanvas } from "./page-builder-canvas";
+import { evaluate } from "@/lib/bovine-basic/interpreter";
+import type { Expr } from "@/lib/bovine-basic/ast";
+import Parser from "@/lib/bovine-basic/parser";
+import { createGlobalEnvironment } from "@/lib/bovine-basic/stdlib";
+import { runtimeValToString } from "@/lib/bovine-basic/values";
+
+const CALCULATION_CONTEXTS: [CalculationContextId, string][] = [
+  ["match", "Match"],
+  ["team", "Team"],
+  ["pick_list", "Pick List"],
+];
+
+const createEmptyCellsByContext = (): Record<CalculationContextId, string[]> => ({
+  match: [""],
+  team: [""],
+  pick_list: [""],
+});
 
 function AnalysisContainer() {
-  const calculationContexts = new Map([
-    ["match", "Match"],
-    ["team", "Team"],
-    ["pick_list", "Pick List"],
-  ]);
-
-  const [calculationContext, setCalculationContext] = useState<string | null>(
-    calculationContexts.keys().next().value || null,
-  );
+  const [calculationContext, setCalculationContext] =
+    useState<CalculationContextId>("match");
+  const [cellsByContext, setCellsByContext] = useState<
+    Record<CalculationContextId, string[]>
+  >(createEmptyCellsByContext);
   const [selectedEntity, setSelectedEntity] = useState<AnyEntityEntry | null>(
     availableEntities[0] ?? null,
   );
@@ -35,23 +53,75 @@ function AnalysisContainer() {
 
   const { getEntityState, attributeRegistry } = useBuilderContext();
 
+  const cellParserRef = useRef(new Parser());
+  const [cellResults, setCellResults] = useState<CellResult[]>([]);
+
+  useEffect(() => {
+    const cells = cellsByContext[calculationContext];
+    const env = createGlobalEnvironment();
+    const results: CellResult[] = [];
+
+    for (const src of cells) {
+      if (src.trim() === "") {
+        results.push({ output: null, error: null });
+        continue;
+      }
+      try {
+        const ast = cellParserRef.current.produceAST(src);
+        const val = evaluate(ast as unknown as Expr, env);
+        const output = runtimeValToString(val);
+        results.push({ output: output === "unit" ? null : output, error: null });
+      } catch (e) {
+        results.push({ output: null, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
+    setCellResults(results);
+  }, [cellsByContext, calculationContext]);
+
+  const setCellValue = useCallback(
+    (contextId: CalculationContextId, index: number, value: string) => {
+      setCellsByContext((prev) => ({
+        ...prev,
+        [contextId]: prev[contextId].map((v, i) => (i === index ? value : v)),
+      }));
+    },
+    [],
+  );
+
+  const addCell = useCallback((contextId: CalculationContextId) => {
+    setCellsByContext((prev) => ({
+      ...prev,
+      [contextId]: [...prev[contextId], ""],
+    }));
+  }, []);
+
+  const removeCell = useCallback(
+    (contextId: CalculationContextId, index: number) => {
+      setCellsByContext((prev) => {
+        const cells = prev[contextId].filter((_, i) => i !== index);
+        return { ...prev, [contextId]: cells.length > 0 ? cells : [""] };
+      });
+    },
+    [],
+  );
+
   return (
     <div className="h-full flex">
       <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
         <div className="p-2 border-border">
           <Select
             value={calculationContext}
-            onValueChange={setCalculationContext}
+            onValueChange={(v) => v && setCalculationContext(v as CalculationContextId)}
           >
             <SelectTrigger size="sm">
               <SelectValue>
-                {calculationContext
-                  ? calculationContexts.get(calculationContext)
-                  : "Select context"}
+                {CALCULATION_CONTEXTS.find(([id]) => id === calculationContext)?.[1] ??
+                  "Select context"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {[...calculationContexts.entries()].map(([id, name]) => (
+              {CALCULATION_CONTEXTS.map(([id, name]) => (
                 <SelectItem key={id} value={id}>
                   {name}
                 </SelectItem>
@@ -60,7 +130,16 @@ function AnalysisContainer() {
           </Select>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <CalculationsPanel />
+          <CalculationsPanel
+            calculationContext={calculationContext}
+            cells={cellsByContext[calculationContext]}
+            cellResults={cellResults}
+            setCellValue={(index, value) =>
+              setCellValue(calculationContext, index, value)
+            }
+            addCell={() => addCell(calculationContext)}
+            removeCell={(index) => removeCell(calculationContext, index)}
+          />
         </div>
       </div>
       <div className="flex-1">

@@ -1,42 +1,37 @@
-import {
-  Program,
-  Expr,
-  NumericLiteral,
-  StringLiteral,
-  BooleanLiteral,
+import type {
   ArrayLiteral,
-  DictionaryLiteral,
-  Identifier,
-  BinaryExpr,
   AssignmentExpr,
-  IndexExpr,
-  MemberExpr,
-  LambdaExpr,
-  CallExpr,
+  BinaryExpr,
   BlockExpr,
-  IfExpr,
-  MatchExpr,
-  WhileExpr,
+  BooleanLiteral,
+  CallExpr,
+  DictionaryLiteral,
+  Expr,
   ForExpr,
+  Identifier,
+  IfExpr,
+  IndexExpr,
+  LambdaExpr,
+  MatchExpr,
+  MemberExpr,
+  NumericLiteral,
+  Program,
+  StringLiteral,
+  UnaryExpr,
+  WhileExpr,
 } from "./ast";
-import {
-  RuntimeVal,
-  UnitVal,
-  NumberVal,
-  BooleanVal,
-  StringVal,
+import type {
   ArrayVal,
+  BooleanVal,
   DictionaryVal,
   FunctionVal,
-  MAKE_UNIT,
-  MAKE_NUMBER,
-  MAKE_BOOL,
-  MAKE_STRING,
-  MAKE_ARRAY,
-  MAKE_DICT,
-  MAKE_FUNCTION,
+  NumberVal,
+  RuntimeVal,
+  StringVal,
 } from "./values";
+
 import Environment from "./environment";
+import { MAKE_ARRAY, MAKE_BOOL, MAKE_DICT, MAKE_FUNCTION, MAKE_NUMBER, MAKE_STRING, MAKE_UNIT } from "./values";
 
 // --- Helpers ---
 
@@ -73,6 +68,11 @@ function evalProgram(program: Program, env: Environment): RuntimeVal {
   return last;
 }
 
+function evalUnaryExpr(node: UnaryExpr, env: Environment): RuntimeVal {
+  const val = evaluate(node.operand, env);
+  return MAKE_BOOL(!isTruthy(val));
+}
+
 function evalBinaryExpr(node: BinaryExpr, env: Environment): RuntimeVal {
   const left = evaluate(node.left, env);
   const right = evaluate(node.right, env);
@@ -80,8 +80,9 @@ function evalBinaryExpr(node: BinaryExpr, env: Environment): RuntimeVal {
   const ln = (left as NumberVal).value;
   const rn = (right as NumberVal).value;
 
+  const bothNumbers = left.type === "number" && right.type === "number";
+
   switch (node.operator) {
-    // Arithmetic (numbers only)
     case "+":
       if (left.type === "string" || right.type === "string") {
         return MAKE_STRING(
@@ -89,35 +90,40 @@ function evalBinaryExpr(node: BinaryExpr, env: Environment): RuntimeVal {
           (right.type === "string" ? (right as StringVal).value : String(rn))
         );
       }
-      if (left.type === "number" && right.type === "number") return MAKE_NUMBER(ln + rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_NUMBER(ln + rn);
+      throw new Error(`Cannot apply '+' to ${left.type} and ${right.type}`);
     case "-":
-      if (left.type === "number" && right.type === "number") return MAKE_NUMBER(ln - rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_NUMBER(ln - rn);
+      throw new Error(`Cannot apply '-' to ${left.type} and ${right.type}`);
     case "*":
-      if (left.type === "number" && right.type === "number") return MAKE_NUMBER(ln * rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_NUMBER(ln * rn);
+      throw new Error(`Cannot apply '*' to ${left.type} and ${right.type}`);
     case "/":
-      if (left.type === "number" && right.type === "number") return MAKE_NUMBER(ln / rn);
-      return MAKE_UNIT();
+      if (bothNumbers) {
+        if (rn === 0) throw new Error("Division by zero");
+        return MAKE_NUMBER(ln / rn);
+      }
+      throw new Error(`Cannot apply '/' to ${left.type} and ${right.type}`);
     case "%":
-      if (left.type === "number" && right.type === "number") return MAKE_NUMBER(ln % rn);
-      return MAKE_UNIT();
-    // Comparison
+      if (bothNumbers) {
+        if (rn === 0) throw new Error("Modulo by zero");
+        return MAKE_NUMBER(ln % rn);
+      }
+      throw new Error(`Cannot apply '%' to ${left.type} and ${right.type}`);
     case "==": return MAKE_BOOL(runtimeEqual(left, right));
     case "!=": return MAKE_BOOL(!runtimeEqual(left, right));
     case "<":
-      if (left.type === "number" && right.type === "number") return MAKE_BOOL(ln < rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_BOOL(ln < rn);
+      throw new Error(`Cannot apply '<' to ${left.type} and ${right.type}`);
     case ">":
-      if (left.type === "number" && right.type === "number") return MAKE_BOOL(ln > rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_BOOL(ln > rn);
+      throw new Error(`Cannot apply '>' to ${left.type} and ${right.type}`);
     case "<=":
-      if (left.type === "number" && right.type === "number") return MAKE_BOOL(ln <= rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_BOOL(ln <= rn);
+      throw new Error(`Cannot apply '<=' to ${left.type} and ${right.type}`);
     case ">=":
-      if (left.type === "number" && right.type === "number") return MAKE_BOOL(ln >= rn);
-      return MAKE_UNIT();
+      if (bothNumbers) return MAKE_BOOL(ln >= rn);
+      throw new Error(`Cannot apply '>=' to ${left.type} and ${right.type}`);
     default:
       throw new Error(`Unknown operator: ${node.operator}`);
   }
@@ -258,6 +264,123 @@ function evalForExpr(node: ForExpr, env: Environment): RuntimeVal {
   return ran ? last : MAKE_UNIT();
 }
 
+/**
+ * Static check run at lambda definition time. Walks the body AST and:
+ * 1. Errors if any identifier is not in `localNames` or resolvable in `env`
+ * 2. Errors if a known function is called with the wrong arity
+ *
+ * `localNames` starts as the lambda's own params and grows with assignments
+ * and inner lambda params encountered during the walk.
+ */
+function checkLambdaBody(node: Expr, env: Environment, localNames: Set<string>): void {
+  switch (node.type) {
+    case "Identifier": {
+      const name = (node as Identifier).symbol;
+      if (name === "_" || name === "unit") break;
+      if (!localNames.has(name) && !env.has(name)) {
+        throw new Error(`'${name}' is not defined`);
+      }
+      break;
+    }
+    case "CallExpr": {
+      const call = node as CallExpr;
+      checkLambdaBody(call.callee, env, localNames);
+      for (const arg of call.args) checkLambdaBody(arg, env, localNames);
+      if (call.callee.type === "Identifier") {
+        const name = (call.callee as Identifier).symbol;
+        if (!localNames.has(name) && env.has(name)) {
+          const val = env.lookupVar(name);
+          if (val.type === "function") {
+            const fn = val as FunctionVal;
+            if (!fn.native && fn.params.length !== call.args.length) {
+              throw new Error(
+                `'${name}' expects ${fn.params.length} argument${fn.params.length === 1 ? "" : "s"}, but is called with ${call.args.length}`,
+              );
+            }
+          }
+        }
+      }
+      break;
+    }
+    case "AssignmentExpr": {
+      const assign = node as AssignmentExpr;
+      checkLambdaBody(assign.value, env, localNames);
+      if (assign.target.type === "Identifier") {
+        localNames.add((assign.target as Identifier).symbol);
+      } else {
+        checkLambdaBody(assign.target as Expr, env, localNames);
+      }
+      break;
+    }
+    case "LambdaExpr": {
+      const lambda = node as LambdaExpr;
+      const innerNames = new Set([...localNames, ...lambda.params]);
+      checkLambdaBody(lambda.body, env, innerNames);
+      break;
+    }
+    case "BinaryExpr": {
+      const bin = node as BinaryExpr;
+      checkLambdaBody(bin.left, env, localNames);
+      checkLambdaBody(bin.right, env, localNames);
+      break;
+    }
+    case "UnaryExpr":
+      checkLambdaBody((node as UnaryExpr).operand, env, localNames);
+      break;
+    case "BlockExpr": {
+      const blockNames = new Set(localNames);
+      for (const expr of (node as BlockExpr).body) checkLambdaBody(expr, env, blockNames);
+      break;
+    }
+    case "IfExpr": {
+      const ifn = node as IfExpr;
+      checkLambdaBody(ifn.condition, env, localNames);
+      checkLambdaBody(ifn.consequent, env, localNames);
+      if (ifn.alternate) checkLambdaBody(ifn.alternate, env, localNames);
+      break;
+    }
+    case "MatchExpr": {
+      const match = node as MatchExpr;
+      checkLambdaBody(match.subject, env, localNames);
+      for (const arm of match.arms) {
+        if (arm.pattern !== "_") checkLambdaBody(arm.pattern as Expr, env, localNames);
+        checkLambdaBody(arm.body, env, localNames);
+      }
+      break;
+    }
+    case "WhileExpr": {
+      const w = node as WhileExpr;
+      checkLambdaBody(w.condition, env, localNames);
+      checkLambdaBody(w.body, env, localNames);
+      break;
+    }
+    case "ForExpr": {
+      const f = node as ForExpr;
+      checkLambdaBody(f.iterable, env, localNames);
+      const loopNames = new Set([...localNames, f.variable]);
+      checkLambdaBody(f.body, env, loopNames);
+      break;
+    }
+    case "ArrayLiteral":
+      for (const el of (node as ArrayLiteral).elements) checkLambdaBody(el, env, localNames);
+      break;
+    case "DictionaryLiteral":
+      for (const entry of (node as DictionaryLiteral).entries) checkLambdaBody(entry.value, env, localNames);
+      break;
+    case "IndexExpr": {
+      const idx = node as IndexExpr;
+      checkLambdaBody(idx.object, env, localNames);
+      checkLambdaBody(idx.index, env, localNames);
+      break;
+    }
+    case "MemberExpr":
+      checkLambdaBody((node as MemberExpr).object, env, localNames);
+      break;
+    default:
+      break;
+  }
+}
+
 function evalCallExpr(node: CallExpr, env: Environment): RuntimeVal {
   const callee = evaluate(node.callee, env);
   if (callee.type !== "function") {
@@ -271,9 +394,15 @@ function evalCallExpr(node: CallExpr, env: Environment): RuntimeVal {
     return fn.native(args);
   }
 
+  if (args.length !== fn.params.length) {
+    throw new Error(
+      `Expected ${fn.params.length} argument${fn.params.length === 1 ? "" : "s"}, got ${args.length}`,
+    );
+  }
+
   const callEnv = new Environment(fn.closure);
   fn.params.forEach((param, idx) => {
-    callEnv.setVar(param, args[idx] ?? MAKE_UNIT());
+    callEnv.setVar(param, args[idx]);
   });
 
   return evaluate(fn.body, callEnv);
@@ -315,12 +444,11 @@ export function evaluate(node: Expr | Program["body"][number], env: Environment)
     case "Identifier": {
       const ident = node as Identifier;
       if (ident.symbol === "unit") return MAKE_UNIT();
-      try {
-        return env.lookupVar(ident.symbol);
-      } catch {
-        return MAKE_UNIT();
-      }
+      return env.lookupVar(ident.symbol);
     }
+
+    case "UnaryExpr":
+      return evalUnaryExpr(node as UnaryExpr, env);
 
     case "BinaryExpr":
       return evalBinaryExpr(node as BinaryExpr, env);
@@ -336,6 +464,7 @@ export function evaluate(node: Expr | Program["body"][number], env: Environment)
 
     case "LambdaExpr": {
       const lambda = node as LambdaExpr;
+      checkLambdaBody(lambda.body, env, new Set(lambda.params));
       return MAKE_FUNCTION(lambda.params, lambda.body, env);
     }
 

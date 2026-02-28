@@ -1,4 +1,4 @@
-import { RuntimeVal } from "./values";
+import type { RuntimeVal } from "./values";
 
 export default class Environment {
   private parent?: Environment;
@@ -20,12 +20,8 @@ export default class Environment {
       return value;
     }
 
-    if (this.parent) {
-      try {
-        return this.parent.setVar(varName, value);
-      } catch {
-        // Variable doesn't exist in any parent scope — declare here
-      }
+    if (this.parent && this.parent.has(varName)) {
+      return this.parent.setVar(varName, value);
     }
 
     this.variables.set(varName, value);
@@ -44,6 +40,11 @@ export default class Environment {
   public lookupVar(varName: string): RuntimeVal {
     const env = this.resolve(varName);
     return env.variables.get(varName) as RuntimeVal;
+  }
+
+  public has(varName: string): boolean {
+    if (this.variables.has(varName)) return true;
+    return this.parent?.has(varName) ?? false;
   }
 
   public resolve(varName: string): Environment {

@@ -9,6 +9,7 @@ export type NodeType =
   | "DictionaryLiteral"
   // Expressions
   | "Identifier"
+  | "UnaryExpr"
   | "BinaryExpr"
   | "AssignmentExpr"
   | "IndexExpr"
@@ -73,6 +74,12 @@ export interface DictionaryLiteral extends Expr {
 export interface Identifier extends Expr {
   type: "Identifier";
   symbol: string;
+}
+
+export interface UnaryExpr extends Expr {
+  type: "UnaryExpr";
+  operator: "not";
+  operand: Expr;
 }
 
 export interface BinaryExpr extends Expr {

@@ -11,6 +11,7 @@ export type TokenType =
   | "For"
   | "In"
   | "Match"
+  | "Not"
   | "True"
   | "False"
   | "Unit"
@@ -46,6 +47,7 @@ const KEYWORDS: Record<string, TokenType> = {
   for: "For",
   in: "In",
   match: "Match",
+  not: "Not",
   true: "True",
   false: "False",
   unit: "Unit",
