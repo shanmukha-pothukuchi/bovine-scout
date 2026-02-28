@@ -1,5 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { FormProvider, useFormContext } from "@/lib/form-builder";
+import {
+  type FormState,
+  FormProvider,
+  useFormContext,
+} from "@/lib/form-builder";
 import {
   DndContext,
   type DragEndEvent,
@@ -133,7 +137,7 @@ function FormSidebar() {
     const id = nanoid();
     setForms((prev) => [
       ...prev,
-      { id, label: "New Form", formStructure: { id, rows: [] } },
+      { id, label: "New Form", formStructure: { id, rows: [] }, formState: {} },
     ]);
     setActiveFormId(id);
     setEditItemId(id);
@@ -161,26 +165,24 @@ function FormSidebar() {
   return (
     <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto shrink-0">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
-          Forms
-        </span>
+        <span className="text-sm font-medium text-muted-foreground">Forms</span>
         <Button variant="ghost" size="icon-sm" onClick={addForm}>
           <PlusIcon />
         </Button>
       </div>
       <div className="flex flex-col gap-1">
-      {forms.map((entry) => (
-        <FormNode
-          key={entry.id}
-          entry={entry}
-          active={entry.id === activeFormId}
-          editMode={editItemId === entry.id}
-          onSelect={() => setActiveFormId(entry.id)}
-          onEdit={() => setEditItemId(entry.id)}
-          onDelete={() => deleteForm(entry.id)}
-          onCommit={(value) => commitEdit(entry.id, value)}
-        />
-      ))}
+        {forms.map((entry) => (
+          <FormNode
+            key={entry.id}
+            entry={entry}
+            active={entry.id === activeFormId}
+            editMode={editItemId === entry.id}
+            onSelect={() => setActiveFormId(entry.id)}
+            onEdit={() => setEditItemId(entry.id)}
+            onDelete={() => deleteForm(entry.id)}
+            onCommit={(value) => commitEdit(entry.id, value)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -205,6 +207,13 @@ function FormEditorContainer() {
           typeof updater === "function" ? updater(f.formStructure) : updater;
         return { ...f, formStructure: next };
       }),
+    );
+  };
+
+  const handleFormEntryChange = (patch: Partial<Pick<FormEntry, "label">>) => {
+    if (!activeFormId) return;
+    setForms((prev) =>
+      prev.map((f) => (f.id === activeFormId ? { ...f, ...patch } : f)),
     );
   };
 
@@ -407,6 +416,8 @@ function FormEditorContainer() {
     >
       <FormEditor
         form={formStructure}
+        formEntry={activeForm}
+        onFormEntryChange={handleFormEntryChange}
         isPreview={isPreview}
         onPreviewToggle={handlePreviewToggle}
         selected={selected}
@@ -435,12 +446,26 @@ function FormEditorContainer() {
 }
 
 export default function FormPage() {
-  const { activeFormId } = useConfig();
+  const { activeFormId, forms, setForms } = useConfig();
+
+  const activeForm = forms.find((f) => f.id === activeFormId) ?? null;
+
+  const handleStateChange = (state: FormState) => {
+    if (!activeFormId) return;
+    setForms((prev) =>
+      prev.map((f) => (f.id === activeFormId ? { ...f, formState: state } : f)),
+    );
+  };
 
   return (
     <div className="h-full flex">
       <FormSidebar />
-      <FormProvider key={activeFormId} entities={availableEntities}>
+      <FormProvider
+        key={activeFormId ?? undefined}
+        entities={availableEntities}
+        initialState={activeForm?.formState ?? {}}
+        onStateChange={handleStateChange}
+      >
         <FormEditorContainer />
       </FormProvider>
     </div>

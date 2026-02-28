@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { useFormContext } from "@/lib/form-builder";
 import { useDroppable } from "@dnd-kit/core";
 import {
   CursorClickIcon,
@@ -7,8 +6,10 @@ import {
   PaletteIcon,
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { entityCategories } from "./constants";
-import { EntitySwatch } from "./entity";
+import type { FormEntry } from "../context";
+import { EntityPalettePanel } from "./entity-palette-panel";
+import { EntityPropertiesPanel } from "./entity-properties-panel";
+import { FormPropertiesPanel } from "./form-properties-panel";
 import { Row } from "./row";
 import type { FormStructure } from "./types";
 
@@ -24,83 +25,18 @@ const SIDEBAR_PANELS: {
   { id: "form-properties", label: "Form Properties", Icon: GearIcon },
 ];
 
-function FormPropertiesPanel() {
-  return (
-    <div className="text-xs text-muted-foreground">
-      No form-level properties available yet.
-    </div>
-  );
-}
-
-function EntityPropertiesPanel({
-  form,
-  selected,
-}: {
-  form: FormStructure;
-  selected: string | null;
-}) {
-  const { getEntityState, attributeRegistry } = useFormContext();
-
-  if (!selected) {
-    return (
-      <div className="text-xs text-muted-foreground">
-        Select a form entity to view and edit properties.
-      </div>
-    );
-  }
-
-  const entityStruct = form.rows
-    .flatMap((row) => row.entities)
-    .find((entity) => entity.id === selected);
-  if (!entityStruct) return null;
-
-  const entityEntry = getEntityState(entityStruct.id);
-  if (!entityEntry) return null;
-
-  return (
-    <>
-      {Object.entries(entityEntry.attributes).map(([attrName, attrState]) => {
-        const Component = attributeRegistry.current[attrState.name].wrapper;
-        return (
-          <Component key={attrName} entityId={selected} attributeKey={attrName} />
-        );
-      })}
-    </>
-  );
-}
-
-function EntityPalettePanel({ isDragDisabled }: { isDragDisabled: boolean }) {
-  return (
-    <>
-      {entityCategories.map((category) => (
-        <div key={category.name} className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {category.name}
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            {category.entities.map((entry) => (
-              <EntitySwatch
-                key={entry.definition.name}
-                name={entry.definition.name}
-                icon={entry.definition.icon}
-                disabled={isDragDisabled}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
-
 export function FormEditor({
   form,
+  formEntry,
+  onFormEntryChange,
   isPreview,
   onPreviewToggle,
   selected,
   setSelected,
 }: {
   form: FormStructure;
+  formEntry: FormEntry;
+  onFormEntryChange: (patch: Partial<Pick<FormEntry, "label">>) => void;
   isPreview: boolean;
   onPreviewToggle: () => void;
   selected: string | null;
@@ -161,8 +97,13 @@ export function FormEditor({
               {SIDEBAR_PANELS.find((p) => p.id === activePanel)?.label}
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-4 w-64">
-            {activePanel === "form-properties" && <FormPropertiesPanel />}
+          <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-4 w-72">
+            {activePanel === "form-properties" && (
+              <FormPropertiesPanel
+                formEntry={formEntry}
+                onChange={onFormEntryChange}
+              />
+            )}
             {activePanel === "entity-properties" && (
               <EntityPropertiesPanel form={form} selected={selected} />
             )}

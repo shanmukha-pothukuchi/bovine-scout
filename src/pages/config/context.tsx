@@ -1,5 +1,6 @@
 import type { TreeNode } from "@/lib/utils";
 import type Environment from "@/lib/bovine-basic/environment";
+import type { FormState } from "@/lib/form-builder";
 import { nanoid } from "nanoid";
 import React, {
   createContext,
@@ -18,6 +19,7 @@ export interface FormEntry {
   id: string;
   label: string;
   formStructure: FormStructure;
+  formState: FormState;
 }
 
 export interface ConfigContextType {
@@ -124,6 +126,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       id: defaultFormId,
       label: "New Form",
       formStructure: { id: defaultFormId, rows: [] },
+      formState: {},
     },
   ]);
   const [activeFormId, setActiveFormId] = useState<string | null>(

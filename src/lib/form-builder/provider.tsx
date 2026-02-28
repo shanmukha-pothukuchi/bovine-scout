@@ -24,34 +24,44 @@ export function FormProvider({
   initialState = {},
   entities = [],
   errorSerializer = defaultErrorSerializer,
+  onStateChange,
 }: {
   children: React.ReactNode;
   initialState?: FormState;
   entities?: AnyEntityEntry[];
   errorSerializer?: ErrorSerializer;
+  onStateChange?: (state: FormState) => void;
 }) {
   const [state, setState] = useState<FormState>(initialState);
+
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
+
+  useEffect(() => {
+    onStateChangeRef.current?.(state);
+  }, [state]);
 
   const stateRef = useRef<FormState>(state);
 
   const entityRegistry = useRef<Record<string, AnyEntityEntry>>({});
   const attributeRegistry = useRef<Record<string, AnyAttributeEntry>>({});
 
-  useEffect(() => {
-    entityRegistry.current = {};
-    attributeRegistry.current = {};
-
-    entities.forEach((entityEntry) => {
-      const entityDef = entityEntry.definition;
-      entityRegistry.current[entityDef.name] = entityEntry;
-
-      (Object.values(entityDef.attributes) as AnyAttributeEntry[]).forEach(
-        (attrEntry) => {
-          attributeRegistry.current[attrEntry.definition.name] = attrEntry;
-        },
-      );
-    });
-  }, [entities]);
+  // Build registries synchronously so they are populated on the first render.
+  const nextEntityRegistry: Record<string, AnyEntityEntry> = {};
+  const nextAttributeRegistry: Record<string, AnyAttributeEntry> = {};
+  entities.forEach((entityEntry) => {
+    const entityDef = entityEntry.definition;
+    nextEntityRegistry[entityDef.name] = entityEntry;
+    (Object.values(entityDef.attributes) as AnyAttributeEntry[]).forEach(
+      (attrEntry) => {
+        nextAttributeRegistry[attrEntry.definition.name] = attrEntry;
+      },
+    );
+  });
+  entityRegistry.current = nextEntityRegistry;
+  attributeRegistry.current = nextAttributeRegistry;
 
   const errorCountRef = useRef(0);
   const [isValid, setIsValid] = useState(true);
