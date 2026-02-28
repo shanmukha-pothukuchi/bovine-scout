@@ -217,7 +217,7 @@ export function PageBuilderCanvas({
   const getCellFromPointer = useCallback(
     (clientX: number, clientY: number): GridPoint | null => {
       const container = gridLayerContainerRef.current;
-      const { gridRowCount, gridColumnCount } = builderStateRef.current;
+      const { gridColumnCount } = builderStateRef.current;
       const { gridCellSize } = gridStateRef.current;
       if (!container || gridCellSize <= 0) return null;
 
@@ -230,7 +230,9 @@ export function PageBuilderCanvas({
       const col = Math.floor(x / stride) + 1;
       const row = Math.floor(y / stride) + 1;
 
-      if (col < 1 || col > gridColumnCount || row < 1 || row > gridRowCount) {
+      // Rows are unbounded downward so dragging/drawing below existing content
+      // can expand the grid dynamically without a stale-rowCount deadlock.
+      if (col < 1 || col > gridColumnCount || row < 1) {
         return null;
       }
 
@@ -244,6 +246,33 @@ export function PageBuilderCanvas({
       ) {
         return null;
       }
+
+      return { top: row, left: col };
+    },
+    [CELL_GAP, GRID_PADDING],
+  );
+
+  // Like getCellFromPointer but snaps into the nearest cell even when the
+  // pointer is inside a gap. Used to anchor drag/resize operations so that
+  // the startCell is always resolved, preventing jumps when the click lands
+  // on a cell border.
+  const getCellFromPointerSnapped = useCallback(
+    (clientX: number, clientY: number): GridPoint | null => {
+      const container = gridLayerContainerRef.current;
+      const { gridColumnCount } = builderStateRef.current;
+      const { gridCellSize } = gridStateRef.current;
+      if (!container || gridCellSize <= 0) return null;
+
+      const rect = container.getBoundingClientRect();
+      const x = clientX - rect.left - GRID_PADDING;
+      const y = clientY - rect.top - GRID_PADDING;
+
+      const stride = gridCellSize + CELL_GAP;
+
+      const col = Math.max(1, Math.min(gridColumnCount, Math.floor(x / stride) + 1));
+      const row = Math.max(1, Math.floor(y / stride) + 1);
+
+      if (x < 0 || y < 0) return null;
 
       return { top: row, left: col };
     },
@@ -402,8 +431,14 @@ export function PageBuilderCanvas({
       };
 
       const startCell =
-        getCellFromPointer(e.clientX, e.clientY) ?? entityState.region.start;
+        getCellFromPointerSnapped(e.clientX, e.clientY) ?? entityState.region.start;
       interactionStateRef.current.startCell = startCell;
+
+      // Show the ghost immediately at the original position so the grid
+      // highlight is visible from the very first frame of the drag.
+      setRegionDraft(entityState.region);
+      interactionStateRef.current.draftRegion = entityState.region;
+      setIsDraftColliding(false);
 
       scrollPointerPositionRef.current = { x: e.clientX, y: e.clientY };
       startAutoScroll();
@@ -439,7 +474,7 @@ export function PageBuilderCanvas({
             : null,
         );
 
-        const currentCell = getCellFromPointer(ev.clientX, ev.clientY);
+        const currentCell = getCellFromPointerSnapped(ev.clientX, ev.clientY);
         if (
           !currentCell ||
           !interactionStateRef.current.startCell ||
@@ -526,7 +561,7 @@ export function PageBuilderCanvas({
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [getCellFromPointer, getRegionPixelRect, startAutoScroll, stopAutoScroll],
+    [getCellFromPointer, getCellFromPointerSnapped, getRegionPixelRect, startAutoScroll, stopAutoScroll],
   );
 
   const handleEntityResizeStart = useCallback(
