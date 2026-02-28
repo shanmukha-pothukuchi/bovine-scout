@@ -9,17 +9,32 @@ export default class Environment {
     this.variables = new Map();
   }
 
-  public declareVar(varName: string, value: RuntimeVal): RuntimeVal {
+  /**
+   * Sets a variable in the nearest scope where it already exists,
+   * or declares it in the current scope if it doesn't exist anywhere.
+   * BovineBASIC uses plain `=` for both declaration and assignment.
+   */
+  public setVar(varName: string, value: RuntimeVal): RuntimeVal {
     if (this.variables.has(varName)) {
-      throw new Error(
-        `Cannot declare variable ${varName} as it is already defined.`,
-      );
+      this.variables.set(varName, value);
+      return value;
+    }
+
+    if (this.parent) {
+      try {
+        return this.parent.setVar(varName, value);
+      } catch {
+        // Variable doesn't exist in any parent scope — declare here
+      }
     }
 
     this.variables.set(varName, value);
     return value;
   }
 
+  /**
+   * Assigns to a variable that must already exist (used for index/member assignment).
+   */
   public assignVar(varName: string, value: RuntimeVal): RuntimeVal {
     const env = this.resolve(varName);
     env.variables.set(varName, value);
@@ -35,7 +50,7 @@ export default class Environment {
     if (this.variables.has(varName)) return this;
 
     if (!this.parent) {
-      throw new Error(`Cannot resolve ${varName} as it does not exist.`);
+      throw new Error(`Cannot resolve '${varName}' as it does not exist.`);
     }
 
     return this.parent.resolve(varName);
