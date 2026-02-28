@@ -19,7 +19,7 @@ import {
 } from "@phosphor-icons/react";
 import { nanoid } from "nanoid";
 import { type ComponentType, useEffect, useState } from "react";
-import { useConfig, type FormEntry } from "../context";
+import { type FormEntry, useConfig } from "../context";
 import { availableEntities } from "./constants";
 import { Entity, EntitySwatch } from "./entity";
 import { FormEditor } from "./form-editor";
