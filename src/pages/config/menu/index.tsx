@@ -83,6 +83,27 @@ export default function MenuEditor() {
     }
   };
 
+  const addNode = (parentId: string | null = null) => {
+    const id = nanoid();
+    if (parentId) {
+      setMenuTree((prev) =>
+        insert(prev, parentId, findNode(prev, parentId)?.children?.length ?? 0, {
+          id,
+          label: "New Item",
+          type: "instantaneous",
+        }),
+      );
+      setExpandedNodes((prev) => new Set(prev).add(parentId));
+    } else {
+      setMenuTree((prev) => [
+        ...prev,
+        { id, label: "New Item", type: "instantaneous" },
+      ]);
+    }
+    setSelectedItem(id);
+    setEditItem(id);
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedNodes((prev) => {
       const next = new Set(prev);
@@ -184,16 +205,7 @@ export default function MenuEditor() {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => {
-                setMenuTree((prev) => [
-                  ...prev,
-                  {
-                    id: nanoid(),
-                    label: "New Item",
-                    type: "instantaneous",
-                  },
-                ]);
-              }}
+              onClick={() => addNode()}
             >
               <PlusIcon />
             </Button>
@@ -206,16 +218,7 @@ export default function MenuEditor() {
             selectedItem={selectedItem!}
             setSelectedItem={setSelectedItem}
             setText={setMenuTreeProperty}
-            addChild={(id) => {
-              setMenuTree((prev) =>
-                insert(prev, id, findNode(prev, id)?.children?.length ?? 0, {
-                  id: nanoid(),
-                  label: "New Item",
-                  type: "instantaneous",
-                }),
-              );
-              setExpandedNodes((prev) => new Set(prev).add(id));
-            }}
+            addChild={(id) => addNode(id)}
             removeChild={(id) => setMenuTree((prev) => remove(prev, id))}
             expandedNodes={expandedNodes}
             onToggleExpand={toggleExpand}

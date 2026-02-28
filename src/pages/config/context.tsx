@@ -1,5 +1,6 @@
 import type { TreeNode } from "@/lib/utils";
 import type Environment from "@/lib/bovine-basic/environment";
+import { nanoid } from "nanoid";
 import React, {
   createContext,
   useContext,
@@ -13,14 +14,22 @@ export type MenuTreeNode = TreeNode<{
   type?: "instantaneous" | "duration";
 }>;
 
+export interface FormEntry {
+  id: string;
+  label: string;
+  formStructure: FormStructure;
+}
+
 export interface ConfigContextType {
   menuTrees: Record<string, MenuTreeNode[]>;
   setMenuTrees: React.Dispatch<
     React.SetStateAction<Record<string, MenuTreeNode[]>>
   >;
   gamePeriods: string[];
-  formStructure: FormStructure;
-  setFormStructure: React.Dispatch<React.SetStateAction<FormStructure>>;
+  forms: FormEntry[];
+  setForms: React.Dispatch<React.SetStateAction<FormEntry[]>>;
+  activeFormId: string | null;
+  setActiveFormId: (id: string | null) => void;
   expressionEnvironment: Environment | null;
   setExpressionEnvironment: (env: Environment | null) => void;
 }
@@ -109,10 +118,17 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     },
   );
 
-  const [formStructure, setFormStructure] = useState<FormStructure>({
-    id: "form",
-    rows: [],
-  });
+  const defaultFormId = nanoid();
+  const [forms, setForms] = useState<FormEntry[]>([
+    {
+      id: defaultFormId,
+      label: "New Form",
+      formStructure: { id: defaultFormId, rows: [] },
+    },
+  ]);
+  const [activeFormId, setActiveFormId] = useState<string | null>(
+    defaultFormId,
+  );
 
   const [expressionEnvironment, setExpressionEnvironment] =
     useState<Environment | null>(null);
@@ -123,8 +139,10 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         menuTrees,
         setMenuTrees,
         gamePeriods,
-        formStructure,
-        setFormStructure,
+        forms,
+        setForms,
+        activeFormId,
+        setActiveFormId,
         expressionEnvironment,
         setExpressionEnvironment,
       }}

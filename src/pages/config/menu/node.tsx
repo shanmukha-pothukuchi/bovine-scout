@@ -102,6 +102,7 @@ export function Node({
               }}
               onChange={(e) => setTempText(e.target.value)}
               autoFocus
+              onFocus={(e) => e.target.select()}
             />
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
@@ -126,19 +127,19 @@ export function Node({
           >
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
-              onClick={onDelete}
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
             >
               <TrashIcon className="opacity-50 w-4" />
             </span>
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
-              onClick={onEdit}
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
             >
               <PencilIcon className="opacity-50 w-4" />
             </span>
             <span
               className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
-              onClick={onAdd}
+              onClick={(e) => { e.stopPropagation(); onAdd(); }}
             >
               <PlusIcon className="opacity-50 w-4" />
             </span>

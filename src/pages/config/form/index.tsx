@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { FormProvider, useFormContext } from "@/lib/form-builder";
 import {
   DndContext,
@@ -9,20 +10,203 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import {
+  CheckIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { nanoid } from "nanoid";
-import { type ComponentType, useState } from "react";
-import { useConfig } from "../context";
+import { type ComponentType, useEffect, useState } from "react";
+import { useConfig, type FormEntry } from "../context";
 import { availableEntities } from "./constants";
 import { Entity, EntitySwatch } from "./entity";
 import { FormEditor } from "./form-editor";
-import type { EntityStructure, RowStructure } from "./types";
+import type { EntityStructure, FormStructure, RowStructure } from "./types";
 
 export type { FormStructure } from "./types";
 
+function FormNode({
+  entry,
+  active,
+  editMode,
+  onSelect,
+  onEdit,
+  onDelete,
+  onCommit,
+}: {
+  entry: FormEntry;
+  active: boolean;
+  editMode: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onCommit: (value: string | null) => void;
+}) {
+  const [tempText, setTempText] = useState(entry.label);
+
+  useEffect(() => {
+    setTempText(entry.label);
+  }, [entry, editMode]);
+
+  return (
+    <div
+      className={`flex rounded-md text-sm p-1.5 cursor-pointer select-none group ${active ? "bg-muted" : "hover:bg-muted"}`}
+      onClick={onSelect}
+    >
+      <div className="flex gap-1.5 items-center w-full">
+        {editMode ? (
+          <div className="w-full flex pl-1">
+            <input
+              className="bg-input border-b border-border w-full mr-1.5 appearance-none outline-none"
+              value={tempText}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onCommit(tempText);
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  onCommit(null);
+                }
+              }}
+              onChange={(e) => setTempText(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              onFocus={(e) => e.target.select()}
+            />
+            <span
+              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCommit(null);
+              }}
+            >
+              <XIcon className="opacity-50 w-4" />
+            </span>
+            <span
+              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCommit(tempText);
+              }}
+            >
+              <CheckIcon className="opacity-50 w-4" />
+            </span>
+          </div>
+        ) : (
+          <span className="w-full pl-1">{entry.label}</span>
+        )}
+
+        {!editMode && (
+          <div className="flex items-center invisible group-hover:visible">
+            <span
+              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              <TrashIcon className="opacity-50 w-4" />
+            </span>
+            <span
+              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <PencilIcon className="opacity-50 w-4" />
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormSidebar() {
+  const { forms, setForms, activeFormId, setActiveFormId } = useConfig();
+  const [editItemId, setEditItemId] = useState<string | null>(null);
+
+  const addForm = () => {
+    const id = nanoid();
+    setForms((prev) => [
+      ...prev,
+      { id, label: "New Form", formStructure: { id, rows: [] } },
+    ]);
+    setActiveFormId(id);
+    setEditItemId(id);
+  };
+
+  const deleteForm = (id: string) => {
+    setForms((prev) => {
+      const next = prev.filter((f) => f.id !== id);
+      if (activeFormId === id) {
+        setActiveFormId(next.length > 0 ? next[0].id : null);
+      }
+      return next;
+    });
+  };
+
+  const commitEdit = (id: string, value: string | null) => {
+    if (value !== null) {
+      setForms((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, label: value } : f)),
+      );
+    }
+    setEditItemId(null);
+  };
+
+  return (
+    <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto shrink-0">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">
+          Forms
+        </span>
+        <Button variant="ghost" size="icon-sm" onClick={addForm}>
+          <PlusIcon />
+        </Button>
+      </div>
+      <div className="flex flex-col gap-1">
+      {forms.map((entry) => (
+        <FormNode
+          key={entry.id}
+          entry={entry}
+          active={entry.id === activeFormId}
+          editMode={editItemId === entry.id}
+          onSelect={() => setActiveFormId(entry.id)}
+          onEdit={() => setEditItemId(entry.id)}
+          onDelete={() => deleteForm(entry.id)}
+          onCommit={(value) => commitEdit(entry.id, value)}
+        />
+      ))}
+      </div>
+    </div>
+  );
+}
+
 function FormEditorContainer() {
-  const { formStructure, setFormStructure } = useConfig();
+  const { forms, setForms, activeFormId } = useConfig();
   const { entityRegistry, registerEntity, deregisterEntity, resetValues } =
     useFormContext();
+
+  const activeForm = forms.find((f) => f.id === activeFormId) ?? null;
+  const formStructure = activeForm?.formStructure ?? { id: "", rows: [] };
+
+  const setFormStructure = (
+    updater: FormStructure | ((prev: FormStructure) => FormStructure),
+  ) => {
+    if (!activeFormId) return;
+    setForms((prev) =>
+      prev.map((f) => {
+        if (f.id !== activeFormId) return f;
+        const next =
+          typeof updater === "function" ? updater(f.formStructure) : updater;
+        return { ...f, formStructure: next };
+      }),
+    );
+  };
 
   const [isPreview, setIsPreview] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -206,6 +390,14 @@ function FormEditorContainer() {
     cleanup();
   };
 
+  if (!activeForm) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+        Select or create a form to get started
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -242,8 +434,15 @@ function FormEditorContainer() {
   );
 }
 
-export default () => (
-  <FormProvider entities={availableEntities}>
-    <FormEditorContainer />
-  </FormProvider>
-);
+export default function FormPage() {
+  const { activeFormId } = useConfig();
+
+  return (
+    <div className="h-full flex">
+      <FormSidebar />
+      <FormProvider key={activeFormId} entities={availableEntities}>
+        <FormEditorContainer />
+      </FormProvider>
+    </div>
+  );
+}

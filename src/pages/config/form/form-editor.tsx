@@ -21,7 +21,7 @@ export function FormEditor({
   selected: string | null;
   setSelected: (id: string | null) => void;
 }) {
-  const { state, getEntityState, attributeRegistry } = useFormContext();
+  const { getEntityState, attributeRegistry } = useFormContext();
 
   const isDragDisabled = useMemo(() => isPreview, [isPreview]);
 
@@ -31,12 +31,7 @@ export function FormEditor({
   });
 
   return (
-    <div className="h-full flex">
-      <div className="w-72 h-full bg-sidebar overflow-y-auto border-r border-border">
-        <pre>{JSON.stringify(state, null, 1)}</pre>
-        <hr />
-        <pre>{JSON.stringify(form, null, 2)}</pre>
-      </div>
+    <div className="h-full flex flex-1 min-w-0">
       <div
         className="flex flex-col flex-1"
         ref={setNodeRef}
