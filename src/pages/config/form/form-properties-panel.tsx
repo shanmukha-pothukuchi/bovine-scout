@@ -12,7 +12,7 @@ export function FormPropertiesPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label className="text-xs text-muted-foreground">Name</Label>
+        <Label className="text-xs text-muted-foreground">Label</Label>
         <Input
           value={formEntry.label}
           onChange={(e) => onChange({ label: e.target.value })}

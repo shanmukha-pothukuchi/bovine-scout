@@ -9,8 +9,8 @@ export const fontSizeAttr = makeAttribute({
   validate: (value: number) => Math.max(8, Math.min(value, 120)),
   component: ({ value, setValue }) => {
     return (
-      <div className="w-full space-y-2">
-        <Label>Font size (px)</Label>
+      <div className="w-full flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Font size (px)</Label>
         <div className="flex items-center gap-3">
           <Slider
             className="flex-1"

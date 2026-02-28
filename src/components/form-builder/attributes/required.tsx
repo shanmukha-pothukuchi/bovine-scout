@@ -8,8 +8,8 @@ export const requiredAttr = makeAttribute({
   validate: (value: boolean) => value,
   component: ({ value, setValue }) => {
     return (
-      <div className="w-full flex flex-col gap-2">
-        <Label htmlFor="required">Required</Label>
+      <div className="w-full flex flex-col gap-1.5">
+        <Label htmlFor="required" className="text-xs text-muted-foreground">Required</Label>
         <Switch id="required" checked={value} onCheckedChange={setValue} />
       </div>
     );

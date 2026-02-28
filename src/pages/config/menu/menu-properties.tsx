@@ -35,8 +35,8 @@ export function MenuProperties({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="label">Label</Label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="label" className="text-xs text-muted-foreground">Label</Label>
         <Input
           id="label"
           value={selectedNode.label}
@@ -45,8 +45,8 @@ export function MenuProperties({
       </div>
 
       {isLeafNode(selectedNode) && (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="type">Type</Label>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="type" className="text-xs text-muted-foreground">Type</Label>
           <Select
             value={selectedNode.type || "instantaneous"}
             onValueChange={(value) =>

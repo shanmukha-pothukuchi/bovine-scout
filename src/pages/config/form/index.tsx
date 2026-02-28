@@ -26,7 +26,7 @@ import { type ComponentType, useEffect, useState } from "react";
 import { type FormEntry, useConfig } from "../context";
 import { availableEntities } from "./constants";
 import { Entity, EntitySwatch } from "./entity";
-import { FormEditor } from "./form-editor";
+import { FormEditor, type SidebarPanel } from "./form-editor";
 import type { EntityStructure, FormStructure, RowStructure } from "./types";
 
 export type { FormStructure } from "./types";
@@ -188,7 +188,17 @@ function FormSidebar() {
   );
 }
 
-function FormEditorContainer() {
+function FormEditorContainer({
+  selected,
+  setSelected,
+  activePanel,
+  setActivePanel,
+}: {
+  selected: string | null;
+  setSelected: (id: string | null) => void;
+  activePanel: SidebarPanel;
+  setActivePanel: (panel: SidebarPanel) => void;
+}) {
   const { forms, setForms, activeFormId } = useConfig();
   const { entityRegistry, registerEntity, deregisterEntity, resetValues } =
     useFormContext();
@@ -218,7 +228,6 @@ function FormEditorContainer() {
   };
 
   const [isPreview, setIsPreview] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
 
   const handlePreviewToggle = () => {
     if (isPreview) resetValues();
@@ -422,6 +431,8 @@ function FormEditorContainer() {
         onPreviewToggle={handlePreviewToggle}
         selected={selected}
         setSelected={setSelected}
+        activePanel={activePanel}
+        setActivePanel={setActivePanel}
       />
       {activeEntitySwatch && !isPreview && (
         <DragOverlay>
@@ -457,6 +468,9 @@ export default function FormPage() {
     );
   };
 
+  const [selected, setSelected] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<SidebarPanel>("entity-palette");
+
   return (
     <div className="h-full flex">
       <FormSidebar />
@@ -466,7 +480,12 @@ export default function FormPage() {
         initialState={activeForm?.formState ?? {}}
         onStateChange={handleStateChange}
       >
-        <FormEditorContainer />
+        <FormEditorContainer
+          selected={selected}
+          setSelected={setSelected}
+          activePanel={activePanel}
+          setActivePanel={setActivePanel}
+        />
       </FormProvider>
     </div>
   );

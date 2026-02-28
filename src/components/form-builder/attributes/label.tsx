@@ -12,8 +12,8 @@ export const labelAttr = makeAttribute({
   },
   component: ({ value, setValue, validateValue, error }) => {
     return (
-      <div className="w-full max-w-sm space-y-2">
-        <Label htmlFor="label">Label</Label>
+      <div className="w-full max-w-sm flex flex-col gap-1.5">
+        <Label htmlFor="label" className="text-xs text-muted-foreground">Label</Label>
         <Input
           id="label"
           type="text"

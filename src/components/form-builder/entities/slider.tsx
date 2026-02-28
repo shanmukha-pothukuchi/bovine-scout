@@ -20,8 +20,8 @@ export const sliderEntity = makeEntity({
       },
       component: ({ value, setValue, validateValue, error }) => {
         return (
-          <div className="w-full max-w-sm space-y-2">
-            <Label htmlFor="min">Min</Label>
+          <div className="w-full max-w-sm flex flex-col gap-1.5">
+            <Label htmlFor="min" className="text-xs text-muted-foreground">Min</Label>
             <Input
               id="min"
               type="number"
@@ -48,8 +48,8 @@ export const sliderEntity = makeEntity({
       },
       component: ({ value, setValue, validateValue, error }) => {
         return (
-          <div className="w-full max-w-sm space-y-2">
-            <Label htmlFor="max">Max</Label>
+          <div className="w-full max-w-sm flex flex-col gap-1.5">
+            <Label htmlFor="max" className="text-xs text-muted-foreground">Max</Label>
             <Input
               id="max"
               type="number"
@@ -76,8 +76,8 @@ export const sliderEntity = makeEntity({
       },
       component: ({ value, setValue }) => {
         return (
-          <div className="flex flex-col gap-2">
-            <Label>Default Value</Label>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs text-muted-foreground">Default Value</Label>
             <Input
               value={value}
               onChange={(e) => setValue(parseInt(e.target.value))}

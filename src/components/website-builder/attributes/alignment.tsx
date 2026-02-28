@@ -27,8 +27,8 @@ export const alignmentAttr = makeAttribute({
   validate: (value: Alignment) => value,
   component: ({ value, setValue }) => {
     return (
-      <div className="w-full space-y-2">
-        <Label>Alignment</Label>
+      <div className="w-full flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Alignment</Label>
         <div className="flex gap-1">
           {alignmentOptions.map(({ value: align, icon: Icon }) => (
             <Button

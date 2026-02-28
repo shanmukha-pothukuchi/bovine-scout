@@ -11,8 +11,8 @@ export const expressionAttr = makeAttribute({
     const { expressionEnvironment } = useConfig();
 
     return (
-      <div className="w-full space-y-2">
-        <Label>Expression</Label>
+      <div className="w-full flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Expression</Label>
         <ExpressionField
           value={value}
           onChange={setValue}

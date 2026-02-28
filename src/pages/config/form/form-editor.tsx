@@ -13,7 +13,7 @@ import { FormPropertiesPanel } from "./form-properties-panel";
 import { Row } from "./row";
 import type { FormStructure } from "./types";
 
-type SidebarPanel = "form-properties" | "entity-properties" | "entity-palette";
+export type SidebarPanel = "form-properties" | "entity-properties" | "entity-palette";
 
 const SIDEBAR_PANELS: {
   id: SidebarPanel;
@@ -33,6 +33,8 @@ export function FormEditor({
   onPreviewToggle,
   selected,
   setSelected,
+  activePanel,
+  setActivePanel,
 }: {
   form: FormStructure;
   formEntry: FormEntry;
@@ -41,8 +43,9 @@ export function FormEditor({
   onPreviewToggle: () => void;
   selected: string | null;
   setSelected: (id: string | null) => void;
+  activePanel: SidebarPanel;
+  setActivePanel: (panel: SidebarPanel) => void;
 }) {
-  const [activePanel, setActivePanel] = useState<SidebarPanel>("entity-palette");
   const [panelBeforeSelection, setPanelBeforeSelection] = useState<SidebarPanel>("entity-palette");
 
   const handleSetSelected = (id: string | null) => {

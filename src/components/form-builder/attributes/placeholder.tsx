@@ -12,8 +12,8 @@ export const placeholderAttr = makeAttribute({
   },
   component: ({ value, setValue, validateValue, error }) => {
     return (
-      <div className="w-full max-w-sm space-y-2">
-        <Label htmlFor="placeholder">Placeholder</Label>
+      <div className="w-full max-w-sm flex flex-col gap-1.5">
+        <Label htmlFor="placeholder" className="text-xs text-muted-foreground">Placeholder</Label>
         <Input
           id="placeholder"
           type="text"

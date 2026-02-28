@@ -26,8 +26,8 @@ export const verticalAlignAttr = makeAttribute({
   validate: (value: VerticalAlign) => value,
   component: ({ value, setValue }) => {
     return (
-      <div className="w-full space-y-2">
-        <Label>Vertical align</Label>
+      <div className="w-full flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Vertical align</Label>
         <div className="flex gap-1">
           {verticalAlignOptions.map(({ value: align, icon: Icon, label }) => (
             <Button
