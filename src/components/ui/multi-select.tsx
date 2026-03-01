@@ -1,149 +1,375 @@
-import React from "react";
-import { XIcon } from "@phosphor-icons/react";
+import { CheckIcon, CaretUpDownIcon, XIcon } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils/index";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
+import { Badge } from "@/components/ui/badge";
 
-import { cn } from "@/lib/utils";
+type MultiSelectContextType = {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  selectedValues: Set<string>;
+  toggleValue: (value: string) => void;
+  items: Map<string, ReactNode>;
+  single: boolean;
+  onItemAdded: (value: string, label: ReactNode) => void;
+};
+const MultiSelectContext = createContext<MultiSelectContextType | null>(null);
 
-export interface MultiSelectOption {
-  value: string;
-  label: string;
+export function MultiSelect({
+  children,
+  values,
+  defaultValues,
+  onValuesChange,
+  single = false,
+}: {
+  children: ReactNode;
+  values?: string[];
+  defaultValues?: string[];
+  onValuesChange?: (values: string[]) => void;
+  single?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [internalValues, setInternalValues] = useState(
+    new Set<string>(values ?? defaultValues),
+  );
+  const selectedValues = values ? new Set(values) : internalValues;
+  const [items, setItems] = useState<Map<string, ReactNode>>(new Map());
+
+  function toggleValue(value: string) {
+    const getNewSet = (prev: Set<string>) => {
+      if (single) {
+        return prev.has(value) ? new Set<string>() : new Set<string>([value]);
+      }
+      const newSet = new Set(prev);
+      if (newSet.has(value)) {
+        newSet.delete(value);
+      } else {
+        newSet.add(value);
+      }
+      return newSet;
+    };
+    setInternalValues(getNewSet);
+    onValuesChange?.([...getNewSet(selectedValues)]);
+    if (single) setOpen(false);
+  }
+
+  const onItemAdded = useCallback((value: string, label: ReactNode) => {
+    setItems((prev) => {
+      if (prev.get(value) === label) return prev;
+      return new Map(prev).set(value, label);
+    });
+  }, []);
+
+  return (
+    <MultiSelectContext
+      value={{
+        open,
+        setOpen,
+        selectedValues,
+        single,
+        toggleValue,
+        items,
+        onItemAdded,
+      }}
+    >
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
+        {children}
+      </Popover>
+    </MultiSelectContext>
+  );
 }
 
-interface MultiSelectProps {
-  options: MultiSelectOption[];
-  value?: MultiSelectOption[];
-  onChange?: (value: MultiSelectOption[]) => void;
-  placeholder?: string;
-  className?: string;
-}
-
-function MultiSelect({
-  options,
-  value,
-  onChange,
-  placeholder = "Select...",
+export function MultiSelectTrigger({
   className,
-}: MultiSelectProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
+  children,
+  ...props
+}: {
+  className?: string;
+  children?: ReactNode;
+} & ComponentPropsWithoutRef<typeof Button>) {
+  const { open } = useMultiSelectContext();
 
-  const selected = value ?? [];
-
-  const handleUnselect = React.useCallback(
-    (option: MultiSelectOption) => {
-      onChange?.(selected.filter((s) => s.value !== option.value));
-    },
-    [selected, onChange],
-  );
-
-  const handleSelect = React.useCallback(
-    (option: MultiSelectOption) => {
-      setInputValue("");
-      onChange?.([...selected, option]);
-    },
-    [selected, onChange],
-  );
-
-  const handleKeyDown = React.useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const input = inputRef.current;
-      if (!input) return;
-      if ((e.key === "Delete" || e.key === "Backspace") && input.value === "") {
-        onChange?.(selected.slice(0, -1));
+  return (
+    <PopoverTrigger
+      render={
+        <Button
+          {...props}
+          variant={props.variant ?? "outline"}
+          role={props.role ?? "combobox"}
+          aria-expanded={props["aria-expanded"] ?? open}
+          className={cn(
+            "flex h-auto min-h-9 w-fit items-center justify-between gap-2 overflow-hidden rounded-md border border-input bg-transparent px-3 py-1.5 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
+            className,
+          )}
+        />
       }
-      if (e.key === "Escape") {
-        input.blur();
+    >
+      {children}
+      <CaretUpDownIcon className="size-4 shrink-0 opacity-50" />
+    </PopoverTrigger>
+  );
+}
+
+export function MultiSelectValue({
+  placeholder,
+  clickToRemove = true,
+  className,
+  overflowBehavior = "wrap-when-open",
+  ...props
+}: {
+  placeholder?: string;
+  clickToRemove?: boolean;
+  overflowBehavior?: "wrap" | "wrap-when-open" | "cutoff";
+} & Omit<ComponentPropsWithoutRef<"div">, "children">) {
+  const { selectedValues, toggleValue, items, open, single } =
+    useMultiSelectContext();
+  const [overflowAmount, setOverflowAmount] = useState(0);
+  const valueRef = useRef<HTMLDivElement>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  const shouldWrap =
+    overflowBehavior === "wrap" ||
+    (overflowBehavior === "wrap-when-open" && open);
+
+  const checkOverflow = useCallback(() => {
+    if (valueRef.current == null) return;
+
+    const containerElement = valueRef.current;
+    const overflowElement = overflowRef.current;
+    const items = containerElement.querySelectorAll<HTMLElement>(
+      "[data-selected-item]",
+    );
+
+    if (overflowElement != null) overflowElement.style.display = "none";
+    items.forEach((child) => child.style.removeProperty("display"));
+    let amount = 0;
+    for (let i = items.length - 1; i >= 0; i--) {
+      const child = items[i]!;
+      if (containerElement.scrollWidth <= containerElement.clientWidth) {
+        break;
       }
+      amount = items.length - i;
+      child.style.display = "none";
+      overflowElement?.style.removeProperty("display");
+    }
+    setOverflowAmount(amount);
+  }, []);
+
+  const handleResize = useCallback(
+    (node: HTMLDivElement) => {
+      valueRef.current = node;
+
+      const mutationObserver = new MutationObserver(checkOverflow);
+      const observer = new ResizeObserver(debounce(checkOverflow, 100));
+
+      mutationObserver.observe(node, {
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class", "style"],
+      });
+      observer.observe(node);
+
+      return () => {
+        observer.disconnect();
+        mutationObserver.disconnect();
+        valueRef.current = null;
+      };
     },
-    [selected, onChange],
+    [checkOverflow],
   );
 
-  const selectables = options.filter(
-    (option) => !selected.some((s) => s.value === option.value),
-  );
+  if (selectedValues.size === 0 && placeholder) {
+    return (
+      <span className="min-w-0 overflow-hidden font-normal text-muted-foreground">
+        {placeholder}
+      </span>
+    );
+  }
 
-  const filtered = inputValue
-    ? selectables.filter((o) =>
-        o.label.toLowerCase().includes(inputValue.toLowerCase()),
-      )
-    : selectables;
+  if (single && selectedValues.size > 0) {
+    return (
+      <span className="min-w-0 overflow-hidden">
+        {items.get([...selectedValues][0])}
+      </span>
+    );
+  }
 
   return (
     <div
-      ref={containerRef}
-      onKeyDown={handleKeyDown}
-      className={cn("relative", className)}
-    >
-      <div
-        className={cn(
-          "border-input dark:bg-input/30 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] flex flex-wrap gap-1 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm transition-colors min-h-8",
-        )}
-        onClick={() => {
-          inputRef.current?.focus();
-          setOpen(true);
-        }}
-      >
-        {selected.map((option) => (
-          <span
-            key={option.value}
-            className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium"
-          >
-            {option.label}
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground rounded-full outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUnselect(option);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleUnselect(option);
-              }}
-            >
-              <XIcon className="size-3" />
-            </button>
-          </span>
-        ))}
-        <input
-          ref={inputRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onFocus={() => setOpen(true)}
-          onBlur={() => {
-            setOpen(false);
-            setInputValue("");
-          }}
-          placeholder={selected.length === 0 ? placeholder : undefined}
-          className="min-w-20 flex-1 bg-transparent outline-none placeholder:text-muted-foreground text-sm"
-        />
-      </div>
-
-      {open && filtered.length > 0 && (
-        <div className="bg-popover text-popover-foreground ring-foreground/10 absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg shadow-md ring-1">
-          <div className="p-1">
-            {filtered.map((option) => (
-              <div
-                key={option.value}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onClick={() => handleSelect(option)}
-                className="hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-md px-2.5 py-1.5 text-sm select-none"
-              >
-                {option.label}
-              </div>
-            ))}
-          </div>
-        </div>
+      {...props}
+      ref={handleResize}
+      className={cn(
+        "flex w-full gap-1.5 overflow-hidden",
+        shouldWrap && "h-full flex-wrap",
+        className,
       )}
+    >
+      {[...selectedValues]
+        .filter((value) => items.has(value))
+        .map((value) => (
+          <Badge
+            variant="outline"
+            data-selected-item
+            className="group flex items-center gap-1"
+            key={value}
+            onClick={
+              clickToRemove
+                ? (e) => {
+                    e.stopPropagation();
+                    toggleValue(value);
+                  }
+                : undefined
+            }
+          >
+            {items.get(value)}
+            {clickToRemove && (
+              <XIcon className="size-2 text-muted-foreground group-hover:text-destructive" />
+            )}
+          </Badge>
+        ))}
+      <Badge
+        style={{
+          display: overflowAmount > 0 && !shouldWrap ? "block" : "none",
+        }}
+        variant="outline"
+        ref={overflowRef}
+      >
+        +{overflowAmount}
+      </Badge>
     </div>
   );
 }
 
-export { MultiSelect };
+export function MultiSelectContent({
+  search = true,
+  children,
+  ...props
+}: {
+  search?: boolean | { placeholder?: string; emptyMessage?: string };
+  children: ReactNode;
+} & Omit<ComponentPropsWithoutRef<typeof Command>, "children">) {
+  const canSearch = typeof search === "object" ? true : search;
+
+  return (
+    <>
+      <div style={{ display: "none" }}>
+        <Command>
+          <CommandList>{children}</CommandList>
+        </Command>
+      </div>
+      <PopoverContent
+        align="start"
+        className="p-0 flex flex-col overflow-hidden"
+      >
+        <Command {...props} className="flex flex-col overflow-hidden">
+          {canSearch ? (
+            <CommandInput
+              placeholder={
+                typeof search === "object" ? search.placeholder : undefined
+              }
+            />
+          ) : (
+            <button autoFocus className="sr-only" />
+          )}
+          <CommandList className="pt-1">
+            {canSearch && (
+              <CommandEmpty>
+                {typeof search === "object" ? search.emptyMessage : undefined}
+              </CommandEmpty>
+            )}
+            {children}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </>
+  );
+}
+
+export function MultiSelectItem({
+  value,
+  children,
+  badgeLabel,
+  onSelect,
+  ...props
+}: {
+  badgeLabel?: ReactNode;
+  value: string;
+} & Omit<ComponentPropsWithoutRef<typeof CommandItem>, "value">) {
+  const { toggleValue, selectedValues, onItemAdded } = useMultiSelectContext();
+  const isSelected = selectedValues.has(value);
+
+  useEffect(() => {
+    onItemAdded(value, badgeLabel ?? children);
+  }, [value, children, onItemAdded, badgeLabel]);
+
+  return (
+    <CommandItem
+      {...props}
+      onSelect={() => {
+        toggleValue(value);
+        onSelect?.(value);
+      }}
+    >
+      <CheckIcon
+        className={cn("mr-2 size-4", isSelected ? "opacity-100" : "opacity-0")}
+      />
+      {children}
+    </CommandItem>
+  );
+}
+
+export function MultiSelectGroup(
+  props: ComponentPropsWithoutRef<typeof CommandGroup>,
+) {
+  return <CommandGroup {...props} />;
+}
+
+export function MultiSelectSeparator(
+  props: ComponentPropsWithoutRef<typeof CommandSeparator>,
+) {
+  return <CommandSeparator {...props} />;
+}
+
+function useMultiSelectContext() {
+  const context = useContext(MultiSelectContext);
+  if (context == null) {
+    throw new Error(
+      "useMultiSelectContext must be used within a MultiSelectContext",
+    );
+  }
+  return context;
+}
+
+function debounce<T extends (...args: never[]) => void>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  return function (this: unknown, ...args: Parameters<T>) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}

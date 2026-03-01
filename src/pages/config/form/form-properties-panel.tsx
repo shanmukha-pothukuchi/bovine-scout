@@ -1,4 +1,10 @@
-import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from "@/components/ui/multi-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isLeafNode } from "@/lib/utils";
@@ -30,7 +36,7 @@ export function FormPropertiesPanel({
   const { menuTrees, forms } = useConfig();
 
   const allLeafNodes = useMemo(() => {
-    const leaves: MultiSelectOption[] = [];
+    const leaves: { value: string; label: string }[] = [];
     for (const [period, tree] of Object.entries(menuTrees)) {
       for (const node of collectLeafNodes(tree)) {
         leaves.push({ value: node.id, label: `${node.label} (${period})` });
@@ -55,11 +61,6 @@ export function FormPropertiesPanel({
     [allLeafNodes, claimedByOthers],
   );
 
-  const selectedOptions = useMemo(
-    () => allLeafNodes.filter((o) => formEntry.menuItemIds.includes(o.value)),
-    [allLeafNodes, formEntry.menuItemIds],
-  );
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
@@ -73,11 +74,20 @@ export function FormPropertiesPanel({
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">Link Menu Items</Label>
         <MultiSelect
-          options={availableOptions}
-          value={selectedOptions}
-          onChange={(next) => onChange({ menuItemIds: next.map((o) => o.value) })}
-          placeholder="Assign menu items…"
-        />
+          values={formEntry.menuItemIds}
+          onValuesChange={(values) => onChange({ menuItemIds: values })}
+        >
+          <MultiSelectTrigger className="w-full">
+            <MultiSelectValue placeholder="Assign menu items…" overflowBehavior="wrap" />
+          </MultiSelectTrigger>
+          <MultiSelectContent search={{ placeholder: "Search…", emptyMessage: "No items found" }}>
+            {availableOptions.map((o) => (
+              <MultiSelectItem key={o.value} value={o.value}>
+                {o.label}
+              </MultiSelectItem>
+            ))}
+          </MultiSelectContent>
+        </MultiSelect>
       </div>
     </div>
   );
