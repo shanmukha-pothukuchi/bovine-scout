@@ -82,7 +82,7 @@ export function FormEditor({
         ref={setNodeRef}
         onClick={() => !isPreview && handleSetSelected(null)}
       >
-        <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+        <div className="flex items-center justify-between border-b border-border bg-sidebar px-2 h-11.25">
           <div className="text-sm font-medium text-muted-foreground">
             Canvas
           </div>
@@ -105,7 +105,7 @@ export function FormEditor({
       </div>
       <div className="h-full bg-sidebar border-l border-border flex">
         <div className="flex flex-col overflow-hidden">
-          <div className="px-2 py-2 border-b border-border shrink-0">
+          <div className="flex items-center px-2 border-b border-border shrink-0 h-11.25">
             <span className="text-sm font-medium text-muted-foreground">
               {SIDEBAR_PANELS.find((p) => p.id === activePanel)?.label}
             </span>

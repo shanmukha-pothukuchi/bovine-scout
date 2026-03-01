@@ -664,7 +664,7 @@ export function PageBuilderCanvas({
         }
       }}
     >
-      <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+      <div className="flex items-center justify-between border-b border-border bg-sidebar px-2 h-11.25">
         <div className="text-sm font-medium text-muted-foreground">Canvas</div>
         <Button
           variant="outline"

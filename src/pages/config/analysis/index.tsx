@@ -114,7 +114,7 @@ function AnalysisContainer() {
   return (
     <div className="h-full flex">
       <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
-        <div className="p-2 border-border">
+        <div className="flex items-center border-b border-border px-2 h-11.25 shrink-0">
           <Select
             value={calculationContext}
             onValueChange={(v) => v && setCalculationContext(v as CalculationContextId)}

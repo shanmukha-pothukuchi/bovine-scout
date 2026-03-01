@@ -67,7 +67,7 @@ export function Node({
       <div className="flex gap-1.5 items-center w-full">
         <span
           className={cn(
-            "flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5",
+            "flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6",
             {
               "hover:bg-accent": item.children && item.children.length > 0,
             },
@@ -105,16 +105,16 @@ export function Node({
               onFocus={(e) => e.target.select()}
             />
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={() => onCommit(null)}
             >
-              <XIcon className="opacity-50 w-4" />
+              <XIcon className="opacity-50 w-5 h-5" />
             </span>
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={() => onCommit(tempText)}
             >
-              <CheckIcon className="opacity-50 w-4" />
+              <CheckIcon className="opacity-50 w-5 h-5" />
             </span>
           </div>
         ) : (
@@ -126,22 +126,22 @@ export function Node({
             className={`flex items-center invisible group-hover:visible ${editMode ? "hidden" : ""}`}
           >
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
             >
-              <TrashIcon className="opacity-50 w-4" />
+              <TrashIcon className="opacity-50 w-5 h-5" />
             </span>
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
             >
-              <PencilIcon className="opacity-50 w-4" />
+              <PencilIcon className="opacity-50 w-5 h-5" />
             </span>
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => { e.stopPropagation(); onAdd(); }}
             >
-              <PlusIcon className="opacity-50 w-4" />
+              <PlusIcon className="opacity-50 w-5 h-5" />
             </span>
           </div>
         )}

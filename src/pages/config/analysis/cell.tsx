@@ -105,17 +105,17 @@ export const Cell = forwardRef<
         />
       </div>
       {syntaxError && (
-        <div className="px-3 py-1.5 text-sm bg-destructive/10 text-destructive border-t border-destructive/20 font-mono leading-snug">
+        <div className="px-2 py-1.5 text-sm bg-destructive/10 text-destructive border-t border-destructive/20 font-mono leading-snug">
           {syntaxError}
         </div>
       )}
       {!syntaxError && result?.error && (
-        <div className="px-3 py-1.5 text-sm bg-destructive/10 text-destructive border-t border-destructive/20 font-mono leading-snug">
+        <div className="px-2 py-1.5 text-sm bg-destructive/10 text-destructive border-t border-destructive/20 font-mono leading-snug">
           {result.error}
         </div>
       )}
       {!syntaxError && !result?.error && result?.output != null && (
-        <div className="px-3 py-1.5 text-right text-sm text-muted-foreground border-t border-border font-mono leading-snug whitespace-pre-wrap">
+        <div className="px-2 py-1.5 text-right text-sm text-muted-foreground border-t border-border font-mono leading-snug whitespace-pre-wrap">
           {result.output}
         </div>
       )}

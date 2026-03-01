@@ -183,8 +183,8 @@ export default function MenuEditor() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto">
-          <div className="mb-2 flex items-center justify-between">
+        <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-2 h-11.25 shrink-0">
             <Select
               value={gamePeriod}
               onValueChange={(val) => val && setGamePeriod(val)}
@@ -211,18 +211,20 @@ export default function MenuEditor() {
             </Button>
           </div>
 
-          <TreeNode
-            tree={menuTree}
-            editItem={editItem}
-            setEditItem={setEditItem}
-            selectedItem={selectedItem!}
-            setSelectedItem={setSelectedItem}
-            setText={setMenuTreeProperty}
-            addChild={(id) => addNode(id)}
-            removeChild={(id) => setMenuTree((prev) => remove(prev, id))}
-            expandedNodes={expandedNodes}
-            onToggleExpand={toggleExpand}
-          />
+          <div className="overflow-y-auto p-2 flex-1">
+            <TreeNode
+              tree={menuTree}
+              editItem={editItem}
+              setEditItem={setEditItem}
+              selectedItem={selectedItem!}
+              setSelectedItem={setSelectedItem}
+              setText={setMenuTreeProperty}
+              addChild={(id) => addNode(id)}
+              removeChild={(id) => setMenuTree((prev) => remove(prev, id))}
+              expandedNodes={expandedNodes}
+              onToggleExpand={toggleExpand}
+            />
+          </div>
         </div>
 
         {createPortal(

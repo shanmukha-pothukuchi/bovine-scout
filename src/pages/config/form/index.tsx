@@ -26,7 +26,7 @@ import { type ComponentType, useEffect, useState } from "react";
 import { type FormEntry, useConfig } from "../context";
 import { availableEntities } from "./constants";
 import { Entity, EntitySwatch } from "./entity";
-import { FormEditor, type SidebarPanel } from "./form-editor";
+import { FormEditor } from "./form-editor";
 import type { EntityStructure, FormStructure, RowStructure } from "./types";
 
 export type { FormStructure } from "./types";
@@ -80,22 +80,22 @@ function FormNode({
               onFocus={(e) => e.target.select()}
             />
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation();
                 onCommit(null);
               }}
             >
-              <XIcon className="opacity-50 w-4" />
+              <XIcon className="opacity-50 w-5 h-5" />
             </span>
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation();
                 onCommit(tempText);
               }}
             >
-              <CheckIcon className="opacity-50 w-4" />
+              <CheckIcon className="opacity-50 w-5 h-5" />
             </span>
           </div>
         ) : (
@@ -105,22 +105,22 @@ function FormNode({
         {!editMode && (
           <div className="flex items-center invisible group-hover:visible">
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
             >
-              <TrashIcon className="opacity-50 w-4" />
+              <TrashIcon className="opacity-50 w-5 h-5" />
             </span>
             <span
-              className="flex justify-center items-center rounded min-w-5 min-h-5 max-w-5 max-h-5 hover:bg-accent"
+              className="flex justify-center items-center rounded min-w-6 min-h-6 max-w-6 max-h-6 hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
             >
-              <PencilIcon className="opacity-50 w-4" />
+              <PencilIcon className="opacity-50 w-5 h-5" />
             </span>
           </div>
         )}
@@ -163,14 +163,14 @@ function FormSidebar() {
   };
 
   return (
-    <div className="w-72 h-full bg-sidebar border-r border-border p-2 overflow-y-auto shrink-0">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="w-72 h-full bg-sidebar border-r border-border flex flex-col shrink-0">
+      <div className="flex items-center justify-between border-b border-border px-2 h-11.25 shrink-0">
         <span className="text-sm font-medium text-muted-foreground">Forms</span>
         <Button variant="ghost" size="icon-sm" onClick={addForm}>
           <PlusIcon />
         </Button>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 overflow-y-auto p-2">
         {forms.map((entry) => (
           <FormNode
             key={entry.id}
@@ -188,17 +188,7 @@ function FormSidebar() {
   );
 }
 
-function FormEditorContainer({
-  selected,
-  setSelected,
-  activePanel,
-  setActivePanel,
-}: {
-  selected: string | null;
-  setSelected: (id: string | null) => void;
-  activePanel: SidebarPanel;
-  setActivePanel: (panel: SidebarPanel) => void;
-}) {
+function FormEditorContainer() {
   const { forms, setForms, activeFormId } = useConfig();
   const { entityRegistry, registerEntity, deregisterEntity, resetValues } =
     useFormContext();
@@ -220,7 +210,7 @@ function FormEditorContainer({
     );
   };
 
-  const handleFormEntryChange = (patch: Partial<Pick<FormEntry, "label" | "menuItemIds">>) => {
+  const handleFormEntryChange = (patch: Partial<Pick<FormEntry, "label">>) => {
     if (!activeFormId) return;
     setForms((prev) =>
       prev.map((f) => (f.id === activeFormId ? { ...f, ...patch } : f)),
@@ -228,6 +218,8 @@ function FormEditorContainer({
   };
 
   const [isPreview, setIsPreview] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<import("./form-editor").SidebarPanel>("entity-palette");
 
   const handlePreviewToggle = () => {
     if (isPreview) resetValues();
@@ -468,9 +460,6 @@ export default function FormPage() {
     );
   };
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<SidebarPanel>("entity-palette");
-
   return (
     <div className="h-full flex">
       <FormSidebar />
@@ -480,12 +469,7 @@ export default function FormPage() {
         initialState={activeForm?.formState ?? {}}
         onStateChange={handleStateChange}
       >
-        <FormEditorContainer
-          selected={selected}
-          setSelected={setSelected}
-          activePanel={activePanel}
-          setActivePanel={setActivePanel}
-        />
+        <FormEditorContainer />
       </FormProvider>
     </div>
   );
