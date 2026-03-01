@@ -225,7 +225,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor({
                 setAutoCompleteMatches([]);
                 break;
             }
-            onKeyDown?.(e);
+            if (!hasMatches) onKeyDown?.(e);
           }}
           onClick={() => setAutoCompleteMatches([])}
         />
