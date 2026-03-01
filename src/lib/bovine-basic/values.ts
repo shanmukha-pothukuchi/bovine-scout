@@ -101,7 +101,7 @@ export function runtimeValToString(val: RuntimeVal): string {
     case "boolean":
       return String((val as BooleanVal).value);
     case "string":
-      return (val as StringVal).value;
+      return `"${(val as StringVal).value}"`;
     case "array": {
       const arr = val as ArrayVal;
       return "[" + arr.elements.map(runtimeValToString).join(", ") + "]";
