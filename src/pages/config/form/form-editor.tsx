@@ -3,7 +3,7 @@ import { useDroppable } from "@dnd-kit/core";
 import {
   CursorClickIcon,
   GearSixIcon,
-  PaletteIcon
+  PaletteIcon,
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { FormEntry } from "../context";
@@ -13,7 +13,10 @@ import { FormPropertiesPanel } from "./form-properties-panel";
 import { Row } from "./row";
 import type { FormStructure } from "./types";
 
-export type SidebarPanel = "form-properties" | "entity-properties" | "entity-palette";
+export type SidebarPanel =
+  | "form-properties"
+  | "entity-properties"
+  | "entity-palette";
 
 const SIDEBAR_PANELS: {
   id: SidebarPanel;
@@ -21,7 +24,11 @@ const SIDEBAR_PANELS: {
   Icon: React.ElementType;
 }[] = [
   { id: "entity-palette", label: "Entity Palette", Icon: PaletteIcon },
-  { id: "entity-properties", label: "Entity Properties", Icon: CursorClickIcon },
+  {
+    id: "entity-properties",
+    label: "Entity Properties",
+    Icon: CursorClickIcon,
+  },
   { id: "form-properties", label: "Form Properties", Icon: GearSixIcon },
 ];
 
@@ -38,7 +45,9 @@ export function FormEditor({
 }: {
   form: FormStructure;
   formEntry: FormEntry;
-  onFormEntryChange: (patch: Partial<Pick<FormEntry, "label" | "menuItemIds">>) => void;
+  onFormEntryChange: (
+    patch: Partial<Pick<FormEntry, "label" | "menuItemIds">>,
+  ) => void;
   isPreview: boolean;
   onPreviewToggle: () => void;
   selected: string | null;
@@ -46,7 +55,8 @@ export function FormEditor({
   activePanel: SidebarPanel;
   setActivePanel: (panel: SidebarPanel) => void;
 }) {
-  const [panelBeforeSelection, setPanelBeforeSelection] = useState<SidebarPanel>("entity-palette");
+  const [panelBeforeSelection, setPanelBeforeSelection] =
+    useState<SidebarPanel>("entity-palette");
 
   const handleSetSelected = (id: string | null) => {
     if (id !== null && selected === null) {
@@ -115,22 +125,20 @@ export function FormEditor({
             )}
           </div>
         </div>
-        <div className="h-full border-l flex flex-col items-center gap-0.5 py-2 px-1">
+        <div className="h-full border-l flex flex-col items-center gap-1 py-2 px-1">
           {SIDEBAR_PANELS.map(({ id, label, Icon }) => (
-            <Button
+            <span
               key={id}
-              variant="ghost"
-              size="icon-sm"
               title={label}
               onClick={() => setActivePanel(id)}
-              className={
+              className={`flex justify-center items-center rounded-md w-8 h-8 cursor-pointer select-none transition-colors ${
                 activePanel === id
                   ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
-              <Icon weight={activePanel === id ? "fill" : "regular"} />
-            </Button>
+              <Icon className="w-6 h-6" />
+            </span>
           ))}
         </div>
       </div>

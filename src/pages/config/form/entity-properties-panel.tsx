@@ -12,7 +12,7 @@ export function EntityPropertiesPanel({
 
   if (!selected) {
     return (
-      <div className="text-xs text-muted-foreground">
+      <div className="flex-1 flex items-center justify-center text-center text-xs text-muted-foreground px-4">
         Select a form entity to view and edit properties.
       </div>
     );
