@@ -92,6 +92,15 @@ export default class Parser {
     return this.parseAssignment();
   }
 
+  /** Like parseExpr but disallows top-level assignment — used for if/while/for conditions. */
+  private parseCondition(): Expr {
+    const expr = this.parseComparison();
+    if (this.check("Equals")) {
+      throw new Error("Assignment '=' is not allowed in a condition — did you mean '==' for equality?");
+    }
+    return expr;
+  }
+
   private parseAssignment(): Expr {
     const left = this.parseComparison();
 
@@ -413,7 +422,7 @@ export default class Parser {
   private parseIfExpr(): IfExpr {
     this.expect("If", "Expected 'if'");
     const hasParen = this.tryEatOpenParen();
-    const condition = this.parseExpr();
+    const condition = this.parseCondition();
     if (hasParen) this.expect("CloseParen", "Expected ')' after if condition");
     this.expect("Then", "Expected 'then' after if condition");
     const consequent = this.parseExpr();
@@ -457,7 +466,7 @@ export default class Parser {
   private parseWhileExpr(): WhileExpr {
     this.expect("While", "Expected 'while'");
     const hasParen = this.tryEatOpenParen();
-    const condition = this.parseExpr();
+    const condition = this.parseCondition();
     if (hasParen) this.expect("CloseParen", "Expected ')' after while condition");
     const body = this.parseBlock();
     return { type: "WhileExpr", condition, body } as WhileExpr;
@@ -468,7 +477,7 @@ export default class Parser {
     const hasParen = this.tryEatOpenParen();
     const variable = this.expect("Identifier", "Expected loop variable name").value;
     this.expect("In", "Expected 'in' in for loop");
-    const iterable = this.parseExpr();
+    const iterable = this.parseCondition();
     if (hasParen) this.expect("CloseParen", "Expected ')' after for loop iterable");
     const body = this.parseBlock();
     return { type: "ForExpr", variable, iterable, body } as ForExpr;

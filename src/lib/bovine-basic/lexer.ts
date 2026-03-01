@@ -93,6 +93,9 @@ export function tokenize(src: string): Token[] {
           i++;
         }
       }
+      if (i >= src.length) {
+        throw new Error(`Unterminated string literal — missing closing ${quote}`);
+      }
       i++;
       tokens.push(token(str, "String"));
       continue;
