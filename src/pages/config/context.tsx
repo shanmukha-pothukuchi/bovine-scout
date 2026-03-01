@@ -18,6 +18,7 @@ export type MenuTreeNode = TreeNode<{
 export interface FormEntry {
   id: string;
   label: string;
+  menuItemIds: string[];
   formStructure: FormStructure;
   formState: FormState;
 }
@@ -53,68 +54,36 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     "End Game",
   ]);
 
-  const defaultTree: MenuTreeNode[] = [
+  const makeDefaultTree = (): MenuTreeNode[] => [
+    { id: nanoid(), label: "Defense", type: "instantaneous" },
+    { id: nanoid(), label: "Utility", type: "instantaneous" },
     {
-      id: "defense",
-      label: "Defense",
-      type: "instantaneous",
-    },
-    {
-      id: "utility",
-      label: "Utility",
-      type: "instantaneous",
-    },
-    {
-      id: "offense",
+      id: nanoid(),
       label: "Offense",
       type: "instantaneous",
       children: [
         {
-          id: "magic",
+          id: nanoid(),
           label: "Magic",
           type: "instantaneous",
           children: [
-            {
-              id: "fire",
-              label: "Fire",
-              type: "instantaneous",
-            },
-            {
-              id: "ice",
-              label: "Ice",
-              type: "instantaneous",
-            },
-            {
-              id: "lightning",
-              label: "Lightning",
-              type: "instantaneous",
-            },
+            { id: nanoid(), label: "Fire", type: "instantaneous" },
+            { id: nanoid(), label: "Ice", type: "instantaneous" },
+            { id: nanoid(), label: "Lightning", type: "instantaneous" },
           ],
         },
-        {
-          id: "melee",
-          label: "Melee",
-          type: "instantaneous",
-        },
-        {
-          id: "ranged",
-          label: "Ranged",
-          type: "instantaneous",
-        },
+        { id: nanoid(), label: "Melee", type: "instantaneous" },
+        { id: nanoid(), label: "Ranged", type: "instantaneous" },
       ],
     },
-    {
-      id: "support",
-      label: "Support",
-      type: "instantaneous",
-    },
+    { id: nanoid(), label: "Support", type: "instantaneous" },
   ];
 
   const [menuTrees, setMenuTrees] = useState<Record<string, MenuTreeNode[]>>(
     () => {
       const trees: Record<string, MenuTreeNode[]> = {};
       for (const period of gamePeriods) {
-        trees[period] = [...defaultTree];
+        trees[period] = makeDefaultTree();
       }
       return trees;
     },
@@ -125,6 +94,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     {
       id: defaultFormId,
       label: "New Form",
+      menuItemIds: [],
       formStructure: { id: defaultFormId, rows: [] },
       formState: {},
     },

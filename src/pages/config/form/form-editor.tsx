@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useDroppable } from "@dnd-kit/core";
 import {
   CursorClickIcon,
-  GearIcon,
-  PaletteIcon,
+  GearSixIcon,
+  PaletteIcon
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { FormEntry } from "../context";
@@ -22,7 +22,7 @@ const SIDEBAR_PANELS: {
 }[] = [
   { id: "entity-palette", label: "Entity Palette", Icon: PaletteIcon },
   { id: "entity-properties", label: "Entity Properties", Icon: CursorClickIcon },
-  { id: "form-properties", label: "Form Properties", Icon: GearIcon },
+  { id: "form-properties", label: "Form Properties", Icon: GearSixIcon },
 ];
 
 export function FormEditor({
@@ -38,7 +38,7 @@ export function FormEditor({
 }: {
   form: FormStructure;
   formEntry: FormEntry;
-  onFormEntryChange: (patch: Partial<Pick<FormEntry, "label">>) => void;
+  onFormEntryChange: (patch: Partial<Pick<FormEntry, "label" | "menuItemIds">>) => void;
   isPreview: boolean;
   onPreviewToggle: () => void;
   selected: string | null;

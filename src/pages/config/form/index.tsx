@@ -137,7 +137,7 @@ function FormSidebar() {
     const id = nanoid();
     setForms((prev) => [
       ...prev,
-      { id, label: "New Form", formStructure: { id, rows: [] }, formState: {} },
+      { id, label: "New Form", menuItemIds: [], formStructure: { id, rows: [] }, formState: {} },
     ]);
     setActiveFormId(id);
     setEditItemId(id);
@@ -220,7 +220,7 @@ function FormEditorContainer({
     );
   };
 
-  const handleFormEntryChange = (patch: Partial<Pick<FormEntry, "label">>) => {
+  const handleFormEntryChange = (patch: Partial<Pick<FormEntry, "label" | "menuItemIds">>) => {
     if (!activeFormId) return;
     setForms((prev) =>
       prev.map((f) => (f.id === activeFormId ? { ...f, ...patch } : f)),
