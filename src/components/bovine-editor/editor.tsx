@@ -1,14 +1,13 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
-import getCaretCoordinates from "textarea-caret";
+import type Environment from "@/lib/bovine-basic/environment";
 import {
+  BUILTIN_NAMES,
   getTextHighlights,
   KEYWORDS,
-  BUILTIN_NAMES,
   type TextHighlight,
 } from "@/lib/bovine-basic/highlight";
 import { STDLIB_MEMBER_NAMES } from "@/lib/bovine-basic/stdlib";
-import Parser from "@/lib/bovine-basic/parser";
-import type Environment from "@/lib/bovine-basic/environment";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import getCaretCoordinates from "textarea-caret";
 import { AutoComplete, type AutoCompleteSuggestion } from "./autocomplete";
 
 const HIGHLIGHT_CLASS: Record<string, string> = {
@@ -28,8 +27,6 @@ const staticSuggestions: AutoCompleteSuggestion[] = [
   ...[...BUILTIN_NAMES].map((word) => ({ word, type: "builtin" as const })),
   ...STDLIB_MEMBER_NAMES.map((word) => ({ word, type: "builtin" as const })),
 ];
-
-const parser = new Parser();
 
 function buildSuggestions(env: Environment | null): AutoCompleteSuggestion[] {
   if (!env) return staticSuggestions;
@@ -52,6 +49,7 @@ function filterSuggestions(
 export interface EditorProps {
   value: string;
   onChange: (value: string) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
   environment?: Environment | null;
   placeholder?: string;
   disabled?: boolean;
@@ -59,14 +57,21 @@ export interface EditorProps {
   className?: string;
 }
 
-export function Editor({
+export interface EditorHandle {
+  focus: () => void;
+  isAtStart: () => boolean;
+  isAtEnd: () => boolean;
+}
+
+export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor({
   value,
   onChange,
+  onKeyDown,
   environment = null,
   placeholder,
   disabled,
   className,
-}: EditorProps) {
+}, ref) {
   const [replaceRange, setReplaceRange] = useState<{
     start: number;
     end: number;
@@ -81,6 +86,18 @@ export function Editor({
   const [selectedMatch, setSelectedMatch] = useState(-1);
 
   const inputLayerRef = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputLayerRef.current?.focus(),
+    isAtStart: () => {
+      const el = inputLayerRef.current;
+      return !!el && el.selectionStart === 0 && el.selectionEnd === 0;
+    },
+    isAtEnd: () => {
+      const el = inputLayerRef.current;
+      return !!el && el.selectionStart === el.value.length && el.selectionEnd === el.value.length;
+    },
+  }));
 
   const allSuggestions = useMemo(
     () => buildSuggestions(environment),
@@ -208,6 +225,7 @@ export function Editor({
                 setAutoCompleteMatches([]);
                 break;
             }
+            onKeyDown?.(e);
           }}
           onClick={() => setAutoCompleteMatches([])}
         />
@@ -223,4 +241,4 @@ export function Editor({
       )}
     </>
   );
-}
+});

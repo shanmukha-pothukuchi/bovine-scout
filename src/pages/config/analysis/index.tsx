@@ -92,11 +92,13 @@ function AnalysisContainer() {
     [],
   );
 
-  const addCell = useCallback((contextId: CalculationContextId) => {
-    setCellsByContext((prev) => ({
-      ...prev,
-      [contextId]: [...prev[contextId], ""],
-    }));
+  const addCell = useCallback((contextId: CalculationContextId, afterIndex?: number) => {
+    setCellsByContext((prev) => {
+      const cells = prev[contextId];
+      const insertAt = afterIndex !== undefined ? afterIndex + 1 : cells.length;
+      const next = [...cells.slice(0, insertAt), "", ...cells.slice(insertAt)];
+      return { ...prev, [contextId]: next };
+    });
   }, []);
 
   const removeCell = useCallback(
@@ -140,7 +142,7 @@ function AnalysisContainer() {
             setCellValue={(index, value) =>
               setCellValue(calculationContext, index, value)
             }
-            addCell={() => addCell(calculationContext)}
+            addCell={(afterIndex) => addCell(calculationContext, afterIndex)}
             removeCell={(index) => removeCell(calculationContext, index)}
           />
         </div>
